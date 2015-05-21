@@ -1,0 +1,27 @@
+identifier:
+  image: semtech/mu-identifier
+  links:
+    - dispatcher:dispatcher
+  ports:
+    - "80:80"
+dispatcher:
+  image: semtech/mu-dispatcher
+  links:
+    - login:login
+    - comments:comments
+  volumes:
+    - config:/config
+db:
+  image: tenforce/virtuoso:virtuoso-v7.2.0-latest
+  environment:
+    SPARQL_UPDATE: "true"
+  ports:
+    - "8890:8890"
+login:
+  image: semtech/mu-login-service
+  links:
+    - db:database
+comments:
+  image: semtech/mu-page-comments-service
+  links:
+    - db:database
