@@ -34,6 +34,10 @@ defmodule Dispatcher do
     Proxy.forward conn, path, "http://comments/"
   end
 
+  match "/files/*path" do
+    Proxy.forward conn, path, "http://file-manager/files"
+  end
+
   match _ do
     send_resp( conn, 404, "Route not found" )
   end

@@ -9,6 +9,7 @@ dispatcher:
   links:
     - login:login
     - comments:comments
+    - fileManager:file-manager
   volumes:
     - config:/config
 db:
@@ -25,3 +26,12 @@ comments:
   image: semtech/mu-page-comments-service
   links:
     - db:database
+fileManager:
+  image: semtech/mu-file-manager
+  links: 
+    - db:database
+  volumes:
+    - /tmp/storage:/home/app/storage
+  environment:
+    MU_APPLICATION_GRAPH: http://mu.semte.ch/app
+    SECRET_KEY_BASE: my-secret-production-key-for-rails
