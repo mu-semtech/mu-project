@@ -28,9 +28,8 @@ defmodule Dispatcher do
     Proxy.forward conn, path, "http://registration/accounts"
   end
 
-  match "/session/*path" do
-    # eg: POST /session/logout
-    Proxy.forward conn, path, "http://login/"
+  match "/sessions/*path" do
+    Proxy.forward conn, path, "http://login/sessions"
   end
 
   match "/comments/*path" do
