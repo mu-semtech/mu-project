@@ -35,7 +35,7 @@ defmodule Dispatcher do
   end
 
   match "/files/*path" do
-    Proxy.forward conn, path, "http://file-manager/files"
+    Proxy.forward conn, path, "http://file/files"
   end
 
   match _ do

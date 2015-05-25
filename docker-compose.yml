@@ -9,7 +9,7 @@ dispatcher:
   links:
     - login:login
     - comments:comments
-    - fileManager:file-manager
+    - file:file
   volumes:
     - config:/config
 db:
@@ -26,8 +26,8 @@ comments:
   image: semtech/mu-page-comments-service
   links:
     - db:database
-fileManager:
-  image: semtech/mu-file-manager
+file:
+  image: semtech/mu-file-service
   links: 
     - db:database
   volumes:
