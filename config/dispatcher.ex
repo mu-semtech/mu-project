@@ -24,6 +24,10 @@ defmodule Dispatcher do
     send_resp( conn, 200, "This is plug" )
   end
 
+  match "/accounts/*path" do
+    Proxy.forward conn, path, "http://registration/accounts"
+  end
+
   match "/session/*path" do
     # eg: POST /session/logout
     Proxy.forward conn, path, "http://login/"

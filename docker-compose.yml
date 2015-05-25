@@ -7,6 +7,7 @@ identifier:
 dispatcher:
   image: semtech/mu-dispatcher
   links:
+    - registration:registration
     - login:login
     - comments:comments
     - file:file
@@ -18,6 +19,13 @@ db:
     SPARQL_UPDATE: "true"
   ports:
     - "8890:8890"
+registration:
+  image: semtech/mu-registration-service
+  links:
+    - db:database
+  environment:
+    MU_APPLICATION_GRAPH: http://mu.semte.ch/app
+    MU_APPLICATION_SALT: mysupersecretsaltchangeme
 login:
   image: semtech/mu-login-service
   links:
