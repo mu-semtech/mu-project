@@ -24,14 +24,14 @@ registration:
   links:
     - db:database
   environment:
-    MU_APPLICATION_GRAPH: http://mu.semte.ch/app
+    MU_APPLICATION_GRAPH: http://mu.semte.ch/application
     MU_APPLICATION_SALT: mysupersecretsaltchangeme
 login:
   image: semtech/mu-login-service
   links:
     - db:database
   environment:
-    MU_APPLICATION_GRAPH: http://mu.semte.ch/app
+    MU_APPLICATION_GRAPH: http://mu.semte.ch/application
     MU_APPLICATION_SALT: mysupersecretsaltchangeme
 comments:
   image: semtech/mu-page-comments-service
@@ -44,5 +44,5 @@ file:
   volumes:
     - /tmp/storage:/home/app/storage
   environment:
-    MU_APPLICATION_GRAPH: http://mu.semte.ch/app
+    MU_APPLICATION_GRAPH: http://mu.semte.ch/application
     SECRET_KEY_BASE: my-secret-production-key-for-rails
