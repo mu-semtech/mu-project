@@ -4,6 +4,8 @@ services:
     image: semtech/mu-identifier:1.0.0
     links:
       - dispatcher:dispatcher
+    ports:
+      - "80:80"
   dispatcher:
     image: semtech/mu-dispatcher:1.0.1
     links:
