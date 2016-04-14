@@ -1,48 +1,27 @@
-identifier:
-  image: semtech/mu-identifier
-  links:
-    - dispatcher:dispatcher
-  ports:
-    - "80:80"
-dispatcher:
-  image: semtech/mu-dispatcher
-  links:
-    - registration:registration
-    - login:login
-    - comments:comments
-    - file:file
-  volumes:
-    - config:/config
-db:
-  image: tenforce/virtuoso:virtuoso-v7.2.0-latest
-  environment:
-    SPARQL_UPDATE: "true"
-  ports:
-    - "8890:8890"
-registration:
-  image: semtech/mu-registration-service
-  links:
-    - db:database
-  environment:
-    MU_APPLICATION_GRAPH: http://mu.semte.ch/application
-    MU_APPLICATION_SALT: mysupersecretsaltchangeme
-login:
-  image: semtech/mu-login-service
-  links:
-    - db:database
-  environment:
-    MU_APPLICATION_GRAPH: http://mu.semte.ch/application
-    MU_APPLICATION_SALT: mysupersecretsaltchangeme
-comments:
-  image: semtech/mu-page-comments-service
-  links:
-    - db:database
-file:
-  image: semtech/mu-file-service
-  links: 
-    - db:database
-  volumes:
-    - /tmp/storage:/home/app/storage
-  environment:
-    MU_APPLICATION_GRAPH: http://mu.semte.ch/application
-    SECRET_KEY_BASE: my-secret-production-key-for-rails
+version: "2"
+services:
+  identifier:
+    image: semtech/mu-identifier:1.0.0
+    links:
+      - dispatcher:dispatcher
+  dispatcher:
+    image: semtech/mu-dispatcher:1.0.1
+    links:
+      - resource:resource
+    volumes:
+      - ./config/dispatcher:/config
+  db:
+    image: tenforce/virtuoso:1.0.0-virtuoso7.2.0
+    environment:
+      SPARQL_UPDATE: "true"
+      DEFAULT_GRAPH: "http://mu.semte.ch/application"
+    ports:
+      - "8890:8890"
+    volumes:
+      - ./data/db:/data
+  resource:
+    image: semtech/mu-cl-resources:1.10.1
+    links:
+      - db:database
+    volumes:
+      - ./config/resources:/config
