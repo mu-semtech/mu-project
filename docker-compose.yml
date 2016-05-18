@@ -22,7 +22,7 @@ services:
     volumes:
       - ./data/db:/data
   resource:
-    image: semtech/mu-cl-resources:1.10.1
+    image: semtech/mu-cl-resources:1.11.0
     links:
       - db:database
     volumes:
