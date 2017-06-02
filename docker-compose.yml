@@ -1,13 +1,13 @@
 version: "2"
 services:
   identifier:
-    image: semtech/mu-identifier:1.0.0
+    image: semtech/mu-identifier:1.2.0
     links:
       - dispatcher:dispatcher
     ports:
       - "80:80"
   dispatcher:
-    image: semtech/mu-dispatcher:1.0.1
+    image: semtech/mu-dispatcher:1.1.0
     links:
       - resource:resource
     volumes:
@@ -22,7 +22,7 @@ services:
     volumes:
       - ./data/db:/data
   resource:
-    image: semtech/mu-cl-resources:1.12.1
+    image: semtech/mu-cl-resources:1.15.0
     links:
       - db:database
     volumes:
