@@ -2,7 +2,7 @@ version: '3.4'
 
 services:
   identifier:
-    image: semtech/mu-identifier:1.6.1
+    image: semtech/mu-identifier:1.7.0
     links:
       - dispatcher:dispatcher
     ports:
