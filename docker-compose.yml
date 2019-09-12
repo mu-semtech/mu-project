@@ -22,6 +22,7 @@ services:
       - "8890:8890"
     volumes:
       - ./data/db:/data
+      - ./config/virtuoso.ini:/data/virtuoso.ini
   resource:
     image: semtech/mu-cl-resources:1.18.0
     links:
