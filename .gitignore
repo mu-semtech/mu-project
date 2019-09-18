@@ -1,10 +1,8 @@
 # Virtuoso files /data/db
-/data/db/clean-logs.sh
-/data/db/*.log
-/data/db/virtuoso-temp.db
-/data/db/virtuoso.db
-/data/db/virtuoso.ini
-/data/db/virtuoso.lck
-/data/db/virtuoso.log
-/data/db/virtuoso.pxa
-/data/db/virtuoso.trx
+/data/db/*
+!/data/db/virtuoso.ini
+!/data/db/toLoad
+!/data/db/toLoad/*
+
+docker-compose.override.yml
+
