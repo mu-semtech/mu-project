@@ -2,13 +2,13 @@ version: '3.4'
 
 services:
   identifier:
-    image: semtech/mu-identifier:1.8.1
+    image: semtech/mu-identifier:1.9.0
     links:
       - dispatcher:dispatcher
     ports:
       - "80:80"
   dispatcher:
-    image: semtech/mu-dispatcher:1.1.2
+    image: semtech/mu-dispatcher:2.0.0
     links:
       - resource:resource
     volumes:
