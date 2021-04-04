@@ -1,16 +1,14 @@
 defmodule Dispatcher do
-  use Plug.Router
+  use Matcher
 
-  def start(_argv) do
-    port = 80
-    IO.puts "Starting Plug with Cowboy on port #{port}"
-    Plug.Adapters.Cowboy.http __MODULE__, [], port: port
-    :timer.sleep(:infinity)
-  end
+  define_accept_types [
+    html: [ "text/html", "application/xhtml+html" ],
+    json: [ "application/json", "application/vnd.api+json" ],
+  ]
 
-  plug Plug.Logger
-  plug :match
-  plug :dispatch
+  @any %{}
+  @json %{ accept: %{ json: true } }
+  @html %{ accept: %{ html: true } }
 
   # In order to forward the 'themes' resource to the
   # resource service, use the following forward rule.
@@ -18,11 +16,11 @@ defmodule Dispatcher do
   # docker-compose stop; docker-compose rm; docker-compose up
   # after altering this file.
   #
-  # match "/themes/*path" do
+  # match "/themes/*path", @json do
   #   Proxy.forward conn, path, "http://resource/themes/"
   # end
 
-  match _ do
+  match "_", %{ last_call: true } do
     send_resp( conn, 404, "Route not found.  See config/dispatcher.ex" )
   end
 
