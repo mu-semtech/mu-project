@@ -25,7 +25,7 @@
 
 
 ;;;;;
-;; You can use the muext: prefix when you're still searching for
+;; You can use the ext: prefix when you're still searching for
 ;; the right predicates during development.  This should *not* be
 ;; used to publish any data under.  It's merely a prefix of which
 ;; the mu.semte.ch organisation indicates that it will not be used
