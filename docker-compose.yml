@@ -26,6 +26,6 @@ services:
   resource:
     image: semtech/mu-cl-resources:1.20.0
     links:
-      - db:database
+      - database:database
     volumes:
       - ./config/resources:/config
