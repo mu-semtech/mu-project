@@ -231,7 +231,7 @@ Boot your microservices-enabled system using docker-compose.
 
 You can shut down using `docker-compose stop` and remove everything using `docker-compose rm`.
 
-## Discussions
+## Explanations/Discussions
 
 ### Why semantic tech? (The future of web apps is mashed up!)
 Interactive websites have been the norm for a few years now. Simple contact forms don’t seal the deal anymore. We need logins, [Instagram](https://www.instagram.com/) integration and instant [Twitter](https://twitter.com/) notifications. It’s time to turbocharge our web development to match the new demand. Single page web applications, mashed up from various services, will push developer productivity to a whole new level.
