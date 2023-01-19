@@ -2,9 +2,12 @@
 
 Bootstrap a mu.semte.ch microservices environment in three easy steps.
 
-## How to
+## Tutorial/getting started
 
-Setting up your environment is done in three easy steps:  first you configure the running microservices and their names in `docker-compose.yml`, then you configure how requests are dispatched in `config/dispatcher.ex`, and lastly you start everything.
+Setting up your environment is done in three easy steps:
+1. First configure the running microservices and their names in `docker-compose.yml`
+2. Then, configure how requests are dispatched in `config/dispatcher.ex`
+3. Lastly, simply start the docker-compose.
 
 ### Hooking things up with docker-compose
 
@@ -12,7 +15,7 @@ Alter the `docker-compose.yml` file so it contains all microservices you need.  
 
 ### Configure the dispatcher
 
-Next, alter the file `config/dispatcher.ex` based on the example that is there by default.  Dispatch requests to the necessary microservices based on the names you used for the microservice.
+Next, alter the file `config/dispatcher/dispatcher.ex` based on the example that is there by default.  Dispatch requests to the necessary microservices based on the names you used for the microservice.
 
 ### Boot up the system
 
