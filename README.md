@@ -30,10 +30,11 @@ Boot your microservices-enabled system using docker-compose.
 You can shut down using `docker-compose stop` and remove everything using `docker-compose rm`.
 
 ## Tutorials
-If you aren't familiar with the semantic.works stack/microservices yet, you might want to check out [why semantic tech?](https://github.com/mu-semtech/mu-docs/blob/main/docs/references/why-semantic-tech)
+If you aren't familiar with the semantic.works stack/microservices yet, you might want to check out [why semantic tech?](https://mu.semte.ch/2017/03/23/adding-ember-fastboot-to-your-mu-project/)
 
 - [Creating a JSON API](#creating-a-json-api)
 - [Creating a mail service](#building-a-mail-handling-service)
+- [Adding Ember Fastboot to your project](#adding-ember-fastboot-to-your-project)
 
 ### Creating a JSON API 
 Repetition is boring. Web applications oftentimes require the same functionality: to create, read, update and delete resources. Even if they operate in different domains. Or, in terms of a REST API, endpoints to GET, POST, PATCH and DELETE resources. Since productivity is one of the driving forces behind the mu.semte.ch architecture, the platform provides a microservice – [mu-cl-resources](https://github.com/mu-semtech/mu-cl-resources) – that generates a [JSONAPI](http://jsonapi.org/) compliant API for your resources based on a simple configuration describing the domain. In this tutorial we will explain how to setup such a configuration.
@@ -713,4 +714,113 @@ To test this you can send a POST request similar to this one to your local mu.se
 If all went well then the person whose email address you filled in in the to field will have gotten a mail from you. Good job! You've just created a mailing microservice.
 
 *This tutorial has been adapted from Jonathan Langens' mu.semte.ch articles. You can view them [here](https://mu.semte.ch/2017/02/16/reactive-microservice-hands-on-tutorial-part-1/) and [here](https://mu.semte.ch/2017/03/16/reactive-microservice-hands-on-tutorial-part-2/).*
+
+### Adding Ember FastBoot to your project
+
+![](http://mu.semte.ch/wp-content/uploads/2017/03/kuifje_op_de_maan-248x300.png)
+In this post, we’re going elaborate a little on how to add Ember FastBoot to your mu-project. This should not be considered as a full blown tutorial, but rather as a set of notes to get you started.
+
+In a nutshell, Ember FastBoot introduces server side rendering on your ember app, which should not only improve user experience by serving static content first, but also make your website more SEO friendly. For more info, I would recommend you to check out [https://ember-fastboot.com/](https://ember-fastboot.com/).
+
+#### Setting the scene
+All right, let’s get started. Assume you’re writing the new blogging app, called “mu-fastboot-example”.  
+It has a very simple data model with two entities. A blog post, which has a title, content, an author and many comments.  You can find the definition [here](https://github.com/cecemel/mu-fastboot-example-backend/blob/master/config/resources/domain.lisp). The backend needs a frontend of course and this has been published [here](https://github.com/cecemel/mu-fastboot-example-frontend).
+
+Assume for now, we only need an index page, which displays an overview of the current posts along with the number of comments to this post, and the authors of the comments.  A blog-post-summary component was created and  its template may be found [here](https://github.com/cecemel/mu-fastboot-example-frontend/blob/master/app/templates/components/blog-post-summary.hbs).
+
+Firing up both frontend and backend, your home page would look like this.
+
+![](http://mu.semte.ch/wp-content/uploads/2017/03/Screen-Shot-2017-03-23-at-13.48.46-226x300.png)
+
+Fetching your index page with a JavaScript disabled client, like e.g. curl, results in a totally SEO unfriendly, user unfriendly blank page, which waits till all resources are loaded before showing something.
+
+#### Adding FastBoot
+
+As [https://ember-fastboot.com/docs/user-guide#architecture](https://ember-fastboot.com/docs/user-guide#architecture) will tell you, two components are involved: the ember addon fastboot, and the application server itself, which will pre-prender your app.  
+Installing fast boot add on is as simple as typing:
+```bash
+  ember install ember-cli-fastboot
+```
+
+The nice thing is, locally, you can immediately test the result of adding fastboot. Type
+```bash
+  ember fastboot
+```
+And to see the result (on port 3000):
+
+```bash
+  curl localhost:3000 
+```
+ 
+```hbs
+  <!-- snippet from the initial html page -->
+  <div id="ember981" class="ember-view"><h3> Another even better post</h3>
+  by cecemel.
+  <p> Celebrating the voidness! </p>
+  <p>comments: 0</p>
+  <p> comment authors: <!----> </p>
+  <!-- end snippet -->`
+```
+
+#### caveats
+
+There is still an issue. As you might have noticed,  the second blog post doesn’t contain any comments or any comment authors.  
+This because, FastBoot decides returning the page to the client, once the _model()_ hook resolves (or _beforeModel(), afterModel()_).  
+If there is a component making an asynchronous call, e.g. counting the comments for each post, FastBook won’t consider this .  
+The trick is, to make sure these async calls are resolved before, the _model()_ hook is resolved. You could change _app/routes/index.js_  e.g. to the following:
+
+```js
+    import Ember from 'ember';
+    
+    export default Ember.Route.extend({
+        fastboot: Ember.inject.service(),
+        model() {
+            if (this.get('fastboot.isFastBoot')) {
+                return this.store.findAll('blog-post', {include: "comments"});
+            }
+            return this.store.findAll('blog-post');
+        }
+    });
+```
+
+This result of this change, can be seen immediately:
+```bash
+  curl localhost:3000
+```
+ 
+```hbs
+  <!-- snippet from the initial html page -->
+  <div id="ember981" class="ember-view"><h3> Another even better post</h3>
+  by cecemel.
+  <p> Celebrating the voidness! </p>
+  <p>comments: 2 </p>
+  <p> comment authors: An anonymous stranger  A popular blogger <!----> </p>
+  <!-- end snippet -->
+```
+
+Unfortunately, this makes FastBoot a little less transparent then one would have initially hoped for. More information may be found at [FastBoot](https://ember-fastboot.com/docs/user-guide#use-model-hooks-to-defer-rendering).
+
+#### Deploying
+
+FastBoot has some nice deploy possibilities such as with AWS and Heroku, but in our case, we’ll go for the [custom server](https://ember-fastboot.com/docs/deploying#custom-server).  At the time of writing, the documentation is NOT up to date,  and as an app server you should use, [fastboot-app-server](https://github.com/ember-fastboot/fastboot-app-server) instead of [fastboot](https://github.com/ember-fastboot/fastboot).
+
+Just as with normal ember apps, in your app root, you build with
+```bash
+    ember build
+```
+
+which should, among the normal files, also create a `dist/fastboot/` folder.  
+To host everything, you should follow the instructions described [here](https://github.com/ember-fastboot/fastboot-app-server).
+
+FORTUNATELY, to ease the deploy, a [docker image](https://github.com/cecemel/ember-fastboot-proxy-service) has been created, which can easily be added to your mu-project, like e.g. [here](https://github.com/cecemel/mu-fastboot-example-backend/blob/master/docker-compose.yml) .
+
+As usual, firing the project up with
+```bash
+    docker-compose stop; docker-compose rm -f; docker-compose up 
+```
+and you should have a working app.
+
+So, that’s it. In case of questions, feel free to reach out.
+
+*This tutorial has been adapted from Felix Ruiz De Arcaute's mu.semte.ch article. You can view it [here](https://mu.semte.ch/2017/03/23/adding-ember-fastboot-to-your-mu-project/)*
 
