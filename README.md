@@ -3,10 +3,42 @@
 Bootstrap a mu.semte.ch microservices environment in three easy steps.
 
 
-## Tutorial (getting started)
+## How-To
+
+### Quickstart an mu-project
+
+Setting up your environment is done in three easy steps:
+1. First configure the running microservices and their names in `docker-compose.yml`
+2. Then, configure how requests are dispatched in `config/dispatcher.ex`
+3. Lastly, simply start the docker-compose.
+
+#### Hooking things up with docker-compose
+
+Alter the `docker-compose.yml` file so it contains all microservices you need.  The example content should be clear, but you can find more information in the [Docker Compose documentation](https://docs.docker.com/compose/).  Don't remove the `identifier` and `db` container, they are respectively the entry-point and the database of your application.  Don't forget to link the necessary microservices to the dispatcher and the database to the microservices.
+
+#### Configure the dispatcher
+
+Next, alter the file `config/dispatcher/dispatcher.ex` based on the example that is there by default.  Dispatch requests to the necessary microservices based on the names you used for the microservice.
+
+#### Boot up the system
+
+Boot your microservices-enabled system using docker-compose.
+
+    cd /path/to/mu-project
+    docker-compose up
+
+You can shut down using `docker-compose stop` and remove everything using `docker-compose rm`.
+
+## Tutorials
+If you aren't familiar with the semantic.works stack/microservices yet, you might want to check out [why semantic tech?](https://github.com/mu-semtech/mu-docs/blob/main/docs/references/why-semantic-tech)
+
+- [Creating a JSON API](#creating-a-json-api)
+- [Creating a mail service](#building-a-mail-handling-service)
+
+### Creating a JSON API 
 Repetition is boring. Web applications oftentimes require the same functionality: to create, read, update and delete resources. Even if they operate in different domains. Or, in terms of a REST API, endpoints to GET, POST, PATCH and DELETE resources. Since productivity is one of the driving forces behind the mu.semte.ch architecture, the platform provides a microservice – [mu-cl-resources](https://github.com/mu-semtech/mu-cl-resources) – that generates a [JSONAPI](http://jsonapi.org/) compliant API for your resources based on a simple configuration describing the domain. In this tutorial we will explain how to setup such a configuration.
 
-### Adding mu-cl-resources to your project
+#### Adding mu-cl-resources to your project
 Like all microservices in the mu.semte.ch stack, mu-cl-resources is published as a Docker image. It just needs two configuration files in `./config/resources/`:
 
 - `domain.lisp`: describing the resources and relationships between them in your domain
@@ -30,10 +62,10 @@ The former option may be easier during development, while the latter is better s
 
 When adding mu-cl-resources to our application, we also have to update the dispatcher configuration such that incoming requests get dispatched to our new service. We will update the dispatcher configuration at the end of this tutorial once we know on which endpoints our resources will be available.
 
-### Describing your domain
+#### Describing your domain
 Next step is to describe your domain in the configuration files. The configuration is written in Common Lisp. Don’t be intimidated, just follow the examples, make abstraction of all the parentheses and your’re good to go 🙂 As an example, we will describe the domain of the [ember-data-table demo](http://ember-data-table.semte.ch/) which [consists of books and their authors](https://github.com/erikap/books-service/tree/ember-data-table-example).
 
-#### repository.lisp
+##### repository.lisp
 The `repository.lisp` file describes the prefixes for the vocabularies used in our domain model.
 
 To start, each configuration file starts with:
@@ -51,7 +83,7 @@ Next, the prefixes are listed one per line as follows:
 (add-prefix "schema" "http://schema.org/")
 ```
 
-#### domain.lisp
+##### domain.lisp
 The domain.lisp file describes your resources and the relationships between them. In this post we will describe the model of a book. Later on we will add an author model and specify the relationship between books and authors.
 
 Also start the `domain.lisp` file with the following line:
@@ -103,7 +135,7 @@ and will result in a triple:
 <http://mu.semte.ch/services/github/madnificent/book-service/books/ead2e61a-ab1e-4261-9b6d-9c142ae94765> my-prefix:my-predicate "some-value"
 ```
 
-### Configuring the dispatcher
+#### Configuring the dispatcher
 
 Our book resources will be available on the /books paths. The mu-cl-resources service provides GET, POST, PATCH and DELETE operations on this path for free Assuming the books service is known as ‘resource’ in our dispatcher, we will add the following dispatch rule to our dispatcher configuration to forward the incoming requests to the books service:
 
@@ -116,7 +148,7 @@ end
 Good job! The books can now be produced and consumed by the frontend through your JSONAPI compliant API. Now we will add relationships to the model.
 
 
-### The author model
+#### The author model
 Each book is written by (at least one) an author. An author isn’t a regular property of a book like - for example - the book’s title. It's a resource on its own. An author has its own properties like a name, a birth date etc. And it is related to a book. Before we can define the relationship between books and authors, we first need to specify the model of an author.
 
 The definition of the model is very similar to that of the book. Add the following lines to your `domain.lisp`:
@@ -136,7 +168,7 @@ match "/authors/*path" do
 end
 ```
 
-### Defining relationships
+#### Defining relationships
 Now that the author model is added, we can define the relationship between a book and an author. Let’s suppose a one-to-many relationship. A book has one author and an author may have written multiple books.
 
 First, extend the book’s model:
@@ -200,92 +232,481 @@ If you want to define a many-to-many relationships between books and authors, ju
 
 Now simply restart your microservice by running `docker-compose restart`, and you're done!
 
-### Conclusion
+#### Conclusion
 That's it! Now you can [fetch](http://jsonapi.org/format/#fetching-relationships) and [update](http://jsonapi.org/format/#crud-updating-relationships) the relationships as specified by [jsonapi.org](http://jsonapi.org/).  The generated API also supports the [include query parameter](http://jsonapi.org/format/#fetching-includes) to include related resources in the response when fetching one or more resource. That’s a lot you get for just a few lines of code, isn’t it?
 
-*This tutorial has been adapted from @erikap's mu.semte.ch articles. You can view them [here](https://mu.semte.ch/2017/07/27/generating-a-jsonapi-compliant-api-for-your-resources/) and [here](https://mu.semte.ch/2017/08/17/generating-a-jsonapi-compliant-api-for-your-resources-part-2/).*
+*This tutorial has been adapted from Erika Pauwels' mu.semte.ch articles. You can view them [here](https://mu.semte.ch/2017/07/27/generating-a-jsonapi-compliant-api-for-your-resources/) and [here](https://mu.semte.ch/2017/08/17/generating-a-jsonapi-compliant-api-for-your-resources-part-2/).*
 
-## How-To
+### Building a mail handling service
+My goal for this short coding session is to have a mail handling service that will allow me to list and maninpulate mails through a JSON API REST back end. And have that service pick up when I write a mail to the database and send it automatically. You can see the result of this project at https://github.com/langens-jonathan/ReactiveMailServiceExample.
 
-### Quickstart an mu-project
+#### Gain a head-start with mu-project
+For this project I started with cloning the mu-project repository:
+```bash
+git clone https://github.com/mu-semtech/mu-project
+```
 
-Setting up your environment is done in three easy steps:
-1. First configure the running microservices and their names in `docker-compose.yml`
-2. Then, configure how requests are dispatched in `config/dispatcher.ex`
-3. Lastly, simply start the docker-compose.
+This will give me the CRUD endpoint I need to manipulate my mail related resources. After cloning I rename the repository to MailBox and set the remote origin to a new one. For now I will leave the README.md file as it is.
 
-#### Hooking things up with docker-compose
+For the first block we will modify the `/config/resources/domain.lisp`, `/config/resourecs/repository.lisp` and the `/config/dispatcher/dispatcher.ex` files.
 
-Alter the `docker-compose.yml` file so it contains all microservices you need.  The example content should be clear, but you can find more information in the [Docker Compose documentation](https://docs.docker.com/compose/).  Don't remove the `identifier` and `db` container, they are respectively the entry-point and the database of your application.  Don't forget to link the necessary microservices to the dispatcher and the database to the microservices.
+To add the necessary resource definitions add them to the domain.lisp file as follows:
 
-#### Configure the dispatcher
+```lisp
+(define-resource mail ()
+   :class (s-prefix "example:Mail")
+   :properties `((:sender :string ,(s-prefix "example:sender"))
+                 (:subject :string ,(s-prefix "example:subject"))
+                 (:content :string ,(s-prefix "example:content"))
+                 (:ready :string ,(s-prefix "example:ready")))
+   :resource-base (s-url "http://example.com/mails/")
+   :on-path "mails")
+```
 
-Next, alter the file `config/dispatcher/dispatcher.ex` based on the example that is there by default.  Dispatch requests to the necessary microservices based on the names you used for the microservice.
+This will create a resource description that we can manipulate on route /mails with the properties sender, title, body and ready.
 
-#### Boot up the system
+Then add the prefix to the `repository.lisp` file:
 
-Boot your microservices-enabled system using docker-compose.
+```lisp
+ (add-prefix "example" "http://example.com/")
+```
 
-    cd /path/to/mu-project
-    docker-compose up
+We are almost there for a first test! The only thing left to do is to add the /mails route to the dispatcher (for more info check the documentation on http://mu.semte.ch). To do this add the following block of code to the dispatcher.ex file:
 
-You can shut down using `docker-compose stop` and remove everything using `docker-compose rm`.
+```
+match "/mails/*path" do
+  Proxy.forward conn, path, "http://resource/mails/"
+end
+```
 
-## Explanations/Discussions
+Now fire this up and lets see what we have by typing:
 
-### Why semantic tech? (The future of web apps is mashed up!)
-Interactive websites have been the norm for a few years now. Simple contact forms don’t seal the deal anymore. We need logins, [Instagram](https://www.instagram.com/) integration and instant [Twitter](https://twitter.com/) notifications. It’s time to turbocharge our web development to match the new demand. Single page web applications, mashed up from various services, will push developer productivity to a whole new level.
+```bash
+docker-compose up
+```
 
-Take the example of a complaint form with an image upload. You probably want the upload to work smoothly, to start the upload eagerly. You may want to show an image preview of the uploaded file. Allow drag and drop, maybe? All that new shiny stuff. But let’s take a step back here. Is image upload really your core business? No? Then why would you develop it?
+in the a console in the project root directory. We don’t have a front end yet but with a tool like postman we can make GET, PATCH and POST calls to test the backend functionality.
 
-<img alt="a drawing of someone using a masher" src="https://mu.semte.ch/wp-content/uploads/2017/01/Future_is_mashed_up_c-1-200x300.png" align="left" style="margin: 20px;" />
+A GET call to http://localhost/mails produces:
+```json
+{
+  "data": [],
+  "links": {
+    "last": "/mails/",
+    "first": "/mails/"
+  }
+}
+```
 
-The future of web applications is mashed up apps. Single page apps that use a multitude of services which are readily available, or which are easy to deploy on your own premises. The app orchestrates the used services so the application works as expected. No project-specific development of components which aren’t core to your business. You can use [Firebase](https://firebase.com/) to store the data of your app, take pictures from [Flickr](https://www.flickr.com/), and stream videos from [YouTube](https://www.youtube.com/). Maybe you’ll still have an in-house service for some custom business logic, but that will be limited. We should take the sharing of open source code to a new level, from software libraries, to microservices. Web apps can use these services, whether they’re hosted at your own premises, or offered as an external service.
+Alright! Ok, no data yet, but we get back resource information.
 
-There’s more to web development than the backend though. New JavaScript technologies, like [ES6 modules](http://www.ecma-international.org/ecma-262/6.0/#sec-modules) or even [webcomponents](http://webcomponents.org/), make it easier than ever to share code. Although browsers may not fully support them yet, big web development frameworks [already](https://guides.emberjs.com/v2.3.0/) [support](https://www.polymer-project.org/1.0/) [much](https://github.com/klaemo/react-es6) [of](https://github.com/gocardless/es6-angularjs) [it](https://guides.emberjs.com/v2.3.0/components/defining-a-component/). The problems of the frontend are similar to those of the backend. Why would you develop the code to talk to Flickr? Why would you implement the login form for each of your projects? We can share it, plug it in our app, and extend it to match our needs. By sharing whole components in the backend and in the frontend, we get a clear feel for the final product long before it has been polished. Most of the time spent will be time spent on polishing the app. We’re looking forward to the new paradigms of software development.
+Lets do a post to make a new mail resource:
 
-And this isn’t the end stage yet. Standardization efforts mark a new way of development. JSON requests are becoming standardised using [JSONAPI](http://jsonapi.org/), allowing us to automatically build the glue code between the frontend and the backend. CSS3 marks major changes in terms of [what](https://developer.mozilla.org/en-US/docs/Web/CSS/filter) [we](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Using_CSS_flexible_boxes) [can](https://drafts.csswg.org/css-backgrounds-3/#border-radius) [visualise](https://drafts.csswg.org/css-transitions/), [websockets](http://www.html5rocks.com/en/tutorials/websockets/basics/) will allow for more interactive applications, [web storage](https://www.w3.org/TR/webstorage/#the-localstorage-attribute) has been standardised, [web](http://www.html5rocks.com/en/tutorials/workers/basics/) [workers](https://www.w3.org/TR/workers/) allow for multithreaded applications and there’s a whole slew of standards which we refuse to mention here because we are already mentioning too many shiny new things!
+```conf
+URL: http://localhost/mails
+Headers: {"Content-Type":"application/vnd.api+json"}
+Body:
+  {
+    "data":{
+      "attributes":{
+        "sender":"flowofcontrol@gmail.com",
+        "subject":"Mu Semtech Mail Server",
+        "content":"This is a test for the Mu Semtech Mail Server.",
+        "ready":"no"
+      },
+      "type":"mails"
+    }
+  }
+```
 
-Mashup-like architectures will make developing new applications easier and less time-consuming. It’s a logical architectural change driven by the evolution in standards, frontend frameworks, and backend automation. We’re jumping on the train with [mu.semte.ch](http://mu.semte.ch/), and you’re free to take a ride with us.
+This gives us the following reponse:
+```json
+{
+  "data": {
+    "attributes": {
+      "sender": "flowofcontrol@gmail.com",
+      "subject": "Mu Semtech Mail Server",
+      "content": "This is a test for the Mu Semtech Mail Server.",
+      "ready": "no"
+    },
+    "id": "58978C2A6460170009000001",
+    "type": "mails",
+    "relationships": {}
+  }
+}
+```
 
-*Imported from https://mu.semte.ch/2017/01/14/the-future-of-web-apps-is-mashed-up/*
+That worked! In about 30 minutes we have a fully functional REST API endpoint for managing mail resources!
 
-<br clear="both">
+To verify the original get again, this now produces:
+```json
+{
+  "data": {
+    "attributes": {
+      "sender": "flowofcontrol@gmail.com",
+      "subject": "Mu Semtech Mail Server",
+      "content": "This is a test for the Mu Semtech Mail Server.",
+      "ready": "no"
+    },
+    "id": "58978C3A6460170009000002",
+    "type": "mails",
+    "relationships": {}
+   }
+}
+```
 
-### Reactive programming
-We are experimenting with reactive programming.  Why?  Orchestration!
+#### Enabling the reactive database
+Before we can start writing our reactive mail managing micro-service we will need to add a monitoring service to monitor the DB. This will be a lot easier than it sounds with mu.semte.ch. To start open the `docker-compose.yml` file and add the following lines at the bottom of the page:
 
-The traditional mu.semte.ch architecture provides user-facing microservices.  The frontend orchestrates the microservices as it is best suited to communicate their effects to the end-user.  But what about backend microservices?  How do we let those communicate?  Can we indicate to the user where things were left off?  Yes.  Yes we can.  With reactive programming.
+```yaml
+delta:
+  image: semtech/mu-delta-service:beta-0.7
+  links:
+    - db:db
+  volumes:
+    - ./config/delta-service:/config
+  environment:
+    CONFIGFILE: "/config/config.properties"
+    SUBSCRIBERSFILE: "/config/subscribers.json"
+```
 
-<img alt="A drawing of a scientist experimenting with RDF" src="https://mu.semte.ch/wp-content/uploads/2017/01/Reactive_programming-1-200x300.png" align="left" style="margin: 20px;">
+This will add the monitoring service to our installation. The last thing to do for now is to change the link on the resource microservice by replacing
+```yaml
+links:
+  - db:database
+```
+with
 
-With reactive programming, our services respond to a certain state being available in the database.  As the state changes, the service is informed, and it can react accordingly.  An email service could detect that an email is currently in the Outbox, mail it to the right user, and move it to the Sent box.  We can keep the database as the only sync-point and have services start tasks based on other services’s work.  Backend services can communicate without direct dependencies, using triples to describe their state in the triplestore. The end-user can be informed on the process by visualizing this state in the frontend.
+```yaml
+links:
+  - delta:database
+```
 
-#### An email example
-Backend services write contents to the triplestore, which is discovered by other microservices hooking into this content.
+The final steps are to create the configuration and subscribers files. Create a file called `config.properties` at the location `config/delta-service/config.properties` and write the following lines in that file:
 
-Let’s assume an email system.  As the user creates an email, it is in Draft status.  Once the email should be sent, we move that email into the Outbox.  As this email gets connected to the Outbox, the email sending service picks it up.  It sends the email, and moves it to the Sent mailbox.  Each of these states is trivially easy to express in the semantic model.
+```conf
+# made by Langens Jonathan
+queryURL=http://db:8890/sparql
+updateURL=http://db:8890/sparql
+sendUpdateInBody=true
+calculateEffectives=true
+```
 
-#### Embracing failure
-It may be that a microservice drops out.  Perhaps we ran out of emails to send under our current plan, perhaps the server hosting our server decided to go on a holiday.  Our approach ensures that, once the service gets back up, it picks up the work from where it left off.
+and then create `config/delta-service/subscribers.json` and put this JSON inside:
 
-Assume we prepare 5 emails to be sent at once.  We place each of the emails in the Outbox, and the sending service starts mailing.  As it has sent the third email, we kill the service.  Two emails are left unsent.  They are still present in the Outbox.  When we restart our mailer-service, it checks what emails are still in the Outbox.  The two mails that match are sent.  As new emails arrive, the mailer picks them up and sends them.
+```json
+{
+  "potentials":[
+  ],
+  "effectives":[
+  ]
+}
+```
 
-Failures can happen.  It is important to ensure the failure of a single microservice doesn’t bring down the whole application.  A big win for reactive microservices.
+If we run `docker-compose rm` and then `docker-compose up` again, the delta service will be booting and already monitoring the changes that happen in the database! Of course we are not doing anything with them yet. So we will create a new micro-service just for this purpose.
 
-#### Rich combinations
-Reactive programming can make the construction of an application a lot simpler.  As we inform the user about state changes, an understanding of the system as a whole can be supplied.
+#### The mail-fetching microservice
+The next step is to build our mail handling microservice. To do this we create a new directory called `mail-service` in our platform base directory. Then we create a file in that directory called `Dockerfile`. We will start from a mu.semte.ch template to make developing this microservice that much quicker. Mu.semte.ch has templates for a bunch of languages ruby, javascript, python, … For this microservice we will go for python 2.7. To do this we simply need to create a `web.py` file which will serve as the location for our code. Next add the following to the Dockerfile:
 
-Let us consider a complex mailing and tagging system.  As we draft an email, we see it in the Draft box.  When we send it, our service moves it to the Outbox.  Our user interface reflects this change, and shows the email in the Outbox now.  The mailer service picks up our email, sends it, and moves it to the Sent box.  This too, can be reflected in the user interface.  This whole picture makes it simple for the user to understand what is going on in the application.
+```dockerfile
+# mail-service/Dockerfile
+FROM semtech/mu-python-template
 
-We can easily push the boundaries for these rich microservices further with more complex systems.  For instance, we may extend our mail client with automatic tagging of emails.  As we classify a set of emails, a Neural Network service indicates that it has started training on the new examples.  Our user interface shows this state.  Once the network has been trained, the updated parameters are written to the store.  Our classification interface hooks into this to launch a new auto-classification of emails we haven’t checked yet.  The microservices are fully decoupled, and the user can easily get a grip on the fairly complex set of operations going on in the backend.
+MAINTAINER Langens Jonathan <flowofcontrol@gmail.com>
+```
 
-Rich applications are easier to construct when clear boundaries exist and are being communicated about.
+I know it doesn’t say much, but it doesn’t need to. The python template will handle the rest.
 
-#### What's next?
-We have ran advanced experiments and have PoCs of the necessary tooling for reactive programming on the mu.semte.ch stack.
+Then we need to add some mail manipulating functionality. Since this is not really the objective of this post I create a `mail_helpers.py` file and paste the following code in there:
+```python
+# mail-service/mail_helpers.py
+import sys
+import imaplib
+import getpass
+import email
+import datetime
+import uuid
+import helpers
 
-The [delta-service](https://github.com/mu-semtech/mu-delta-service) calculates triples that would be changed by the execution of an update query.  It can inform other services about these changes so they can update as necessary.  We are building some example microservices leveraging this approach, whilst applying the concept to end-user PoC applications.
+def save_mail(sender, date, subject, content):
+  str_uuid = str(uuid.uuid4())
+  insert_query = "INSERT DATA\n{\nGRAPH <http://mu.semte.ch/application>\n{\n<http://mail.com/examples/mail/" + str_uuid + "> a <http://mail.com/Mail>;\n"
+  insert_query += "<http://mail.com/from> \"" + sender + "\";\n"
+  insert_query += "<http://mail.com/date> \"" + date + "\";\n"
+  insert_query += "<http://mail.com/content> \"" + content + "\";\n"
+  insert_query += "<http://mail.com/subject> \"" + subject + "\";\n"
+  insert_query += "<http://mu.semte.ch/vocabularies/core/uuid> \"" + str_uuid + "\".\n"
+  insert_query += "}\n}"
+  print "query:\n", insert_query
+  helpers.update(insert_query)
+
+def process_mailbox(mailbox):
+  rv, data = mailbox.search(None, "ALL")
+  if rv != 'OK':
+    print "No messages found!"
+  return
+
+  for num in data[0].split():
+    rv, data = mailbox.fetch(num, '(RFC822)')
+    if rv != 'OK':
+      print "ERROR getting message", num
+    return
+  
+    msg = email.message_from_string(data[0][1])
+    content = str(msg.get_payload())
+    content = content.replace('\n','')
+
+    save_mail(msg['From'], msg['Date'], msg['Subject'], content)
+```
+
+As you can see the mail_helpers contain 2 functions, 1 to iterate over all emails in a mailbox and the other to save a single email to the triple store. Easy peasy!
+
+Next we create `web.py`. For more information on how the python template can be used you can visit: https://github.com/mu-semtech/mu-python-template. I created the following method to process all mails:
+```python
+# mail-service/web.py
+@app.route("/fetchMails")
+def fetchMailMethod():
+  EMAIL_ADDRESS = "address"
+  EMAIL_PWD = "pwd"
+
+  MAIL_SERVER = imaplib.IMAP4_SSL('imap.gmail.com')
+
+  try:
+    MAIL_SERVER.login(EMAIL_ADDRESS, EMAIL_PWD)
+    except imaplib.IMAP4.error:
+     print "Logging into mailbox failed! "
+
+  rv, data = MAIL_SERVER.select("INBOX")
+  if rv == 'OK':
+    mail_helpers.process_mailbox(MAIL_SERVER)
+    MAIL_SERVER.close()
+
+  MAIL_SERVER.logout()
+
+  return "ok"
+```
+
+This method is rather straightforward: it just opens a connection to an email address and opens the inbox mailbox. It then selects it for processing, thus inserting all mails into the triple store.
+
+At this point, we have:
+- Defined a JSONAPI through which we can access our emails, using the standard mu.semte.ch stack
+- Built a custom service which fetches the emails from our mail account and inserts them into the triplestore using the right model
+
+Now we will use these services in combination with the delta service, to discover which emails were inserted into the database, and to perform reactive computations on it.
+
+#### The delta service
+
+The delta service’s responsibilities are:
+
+- Acting as the SPARQL endpoint for the microservices
+- Calculating the differences (deltas) that a query will introduce in the database
+- Notifying interested parties of these differences
+
+For this hands on we use version beta-0.8 of the delta service.
+
+##### What do these delta reports look like?
+There are 2 types of delta reports, you have potential inserts and effective inserts. A report for either will look like:
+```json
+{
+  "delta": [
+    {
+      "type": "effective",
+      "graph": "http://mu.semte.ch/application",
+      "inserts": [
+        {
+          "s": {
+            "value": "http://example.com/mails/58B187FA6AA88E0009000001",
+            "type": "uri"
+          },
+          "p": {
+            "value": "http://example.com/subject",
+            "type": "uri"
+          },
+          "o": {
+            "value": "Mu Semtech Mail Server",
+            "type": "literal"
+          }
+        },
+       ...
+}
+```
+*You can view the full version [here](https://gist.githubusercontent.com/langens-jonathan/cd5db8e9f68861662d888dad77f93662/raw/84adc69f9fd3143f45c05c0a5cefdf1ca9b95b55/gistfile1.txt).*
+
+A report states the query that was send, an array of inserted objects and an array of deleted objects: Inserted or deleted objects represent a single triple with s, p and o being subject, predicate and object.
+
+#### Expanding our mail handling microservice
+We need to notify the delta service of the existence of our mail handling service. We do this using the `subscribers.json` file that was created before. Change it so it looks like:
+
+```json
+{
+  "potentials":[
+  ],
+    "effectives":[
+    "http://mailservice/process_delta"
+  ]
+}
+```
+
+In the `docker-compose.yml` file we need to alter the delta-service definition to look like:
+
+```yaml
+  delta:
+    image: semtech/mu-delta-service:beta-0.8
+    links:
+      - db:db
+      - mailservice:mailservice
+    volumes:
+      - ./config/delta-service:/config
+    environment:
+      CONFIGFILE: "/config/config.properties"
+      SUBSCRIBERSFILE: "/config/subscribers.json"
+```
+
+That way the delta service can talk to the mailservice.
+
+To handle delta reports in our mail handling microservice we will need 2 things:
+
+- Get access to the POST body of a request
+- Process and manipulate JSON data
+
+To get access to this add the following imports to your `web.py` file:
+
+```python
+import json
+from flask import request
+```
+
+Then we define a new method that will:
+- Handle the incoming delta reports
+- Load the delta report into a variable
+- Define some variables.
+
+Lastly we define an array that will hold the URI’s of all emails that need to be send.
 
 
-<br clear="both">
+```python
+# mail-service/web.py
+@app.route("/process_delta", methods=['POST'])
+def processDelta():
+  delta_report = json.loads(request.data)
+  mails_to_send = set()
+  predicate_mail_is_ready = "http://example.com/ready"
+  value_mail_is_ready = "yes"
+  # continued later...
+```
+
+We will loop over all inserted triples to check for mails that are ready to be send:
+```python
+# mail-service/web.py
+def processDelta():
+  # ...
+  # ...continuation
+  for delta in delta_report['delta']:
+      for triple in delta['inserts']:
+          if(triple['p']['value'] == predicate_mail_is_ready):
+              if(triple['o']['value'] == value_mail_is_ready):
+                  mails_to_send.add(triple['s']['value'])
+  # continued later...
+```
+
+After this for loop has run all the URI’s of mails that are ready to be send ill be in the mails_to_send array. Now we loop over the array and query the database for each URI in the set. And then we will fetch a mail object for every URI that is in the set.
+
+Add the next code to `mail_helpers.py`:
+```python
+# mail-service/mail_helpers.py
+def load_mail(uri):
+    # this query will find the mail (if it exists)
+    select_query = "SELECT DISTINCT ?uuid ?from ?ready ?subject ?content\n"
+    select_query += "WHERE \n{\n"
+    select_query += "<" + str(uri) + "> <http://mail.com/from> ?from;\n"
+    select_query += "a <http://mail.com/Mail>;\n"
+    select_query += "<http://mail.com/content> ?content;\n"
+    select_query += "<http://mail.com/subject> ?subject;\n"
+    select_query += "<http://mail.com/ready> ?ready;\n"
+    select_query += "<http://mu.semte.ch/vocabularies/core/uuid> ?uuid.\n"
+    select_query += "}"
+
+    # execute the query...
+    result = helpers.query(select_query)
+
+    # if the length of the result array is 0 we return nil
+    if len(result['results']['bindings']) < 1:
+        return {}
+
+    # I should probably check here but for a quick test application
+    # it doesn't matter that much. If there is more than 1 result
+    # that would indicate a data error
+    bindings = result['results']['bindings'][0]
+
+    # we extract an object
+    mail = dict()
+    mail['uuid'] = bindings['uuid']['value']
+    mail['sender'] = bindings['from']['value']
+    mail['ready'] = bindings['ready']['value']
+    mail['subject'] = bindings['subject']['value']
+    mail['content'] = bindings['content']['value']
+
+    return mail
+```
+
+This function will load the mail object from the triple store. There is still the chance that the ready predicate was sent for some other object, for a mail that does not have all required fields, or for an object that is not a mail but happens to use the same predicate.
+
+We will use this function to try to load a mail object for each URI. Because the query was build without OPTIONAL statements, we are certain that an the dictionary returned by the load_mail function will either have all keys or none.
+
+To send the mail I have copied the entire send_mail function from http://naelshiab.com/tutorial-send-email-python/ and modified it slightly to take into account the dictionary object that now describes the mail.
+
+```python
+# mail-service/mail_helpers.py
+def send_mail(mail):
+
+    fromaddr = "YOUR EMAIL"
+    toaddr = "EMAIL ADDRESS YOU SEND TO"
+
+    msg = MIMEMultipart()
+
+    msg['From'] = mail['from']
+    msg['To'] = mail['to']
+    msg['Subject'] = mail['subject']
+
+    body = mail['content']
+    msg.attach(MIMEText(body, 'plain'))
+
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.starttls()
+    server.login(fromaddr, "YOUR PASSWORD")
+    text = msg.as_string()
+    server.sendmail(fromaddr, toaddr, text)
+    server.quit()
+```
+
+The last thing that we need to do is to connect the list of URI’s to the send_mail function:
+```python
+# mail-service/web.py
+def processDelta():
+  # ...continuation
+    for uri in mails_to_send:
+        mail = mail_helpers.load_mail(uri)
+        if 'uuid' in mail.keys():
+            mail_helpers.send_mail(mail, EMAIL_ADDRESS, EMAIL_PWD)
+```
+
+To test this you can send a POST request similar to this one to your local mu.semte.ch application on http://localhost/mails:
+
+```json
+{"data":{
+  "attributes":{
+    "from":"flowofcontrol@gmail.com",
+    "subject":"A mail from the triple store",
+    "content":"This mail was sent by a micro service that listens to your triple store.",
+    "ready":"yes",
+    "to":"flowofcontrol@gmail.com"
+    },
+ "type":"mails"
+ }
+}
+```
+
+If all went well then the person whose email address you filled in in the to field will have gotten a mail from you. Good job! You've just created a microservice.
+
+*This tutorial has been adapted from Jonathan Langens' mu.semte.ch articles. You can view them [here](https://mu.semte.ch/2017/02/16/reactive-microservice-hands-on-tutorial-part-1/) and [here](https://mu.semte.ch/2017/03/16/reactive-microservice-hands-on-tutorial-part-2/).*
+
