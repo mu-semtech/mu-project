@@ -237,8 +237,12 @@ That's it! Now you can [fetch](http://jsonapi.org/format/#fetching-relationships
 
 *This tutorial has been adapted from Erika Pauwels' mu.semte.ch articles. You can view them [here](https://mu.semte.ch/2017/07/27/generating-a-jsonapi-compliant-api-for-your-resources/) and [here](https://mu.semte.ch/2017/08/17/generating-a-jsonapi-compliant-api-for-your-resources-part-2/).*
 
+
+
+
+
 ### Building a mail handling service
-My goal for this short coding session is to have a mail handling service that will allow me to list and maninpulate mails through a JSON API REST back end. And have that service pick up when I write a mail to the database and send it automatically. You can see the result of this project at https://github.com/langens-jonathan/ReactiveMailServiceExample.
+My goal for this short coding session is to have a mail handling service that will allow me to list and maninpulate mails through a JSON:API REST back-end. And have that service pick up when I write a mail to the database and send it automatically. You can see the result of this project at https://github.com/langens-jonathan/ReactiveMailServiceExample.
 
 #### Gain a head-start with mu-project
 For this project I started with cloning the mu-project repository:
@@ -246,11 +250,11 @@ For this project I started with cloning the mu-project repository:
 git clone https://github.com/mu-semtech/mu-project
 ```
 
-This will give me the CRUD endpoint I need to manipulate my mail related resources. After cloning I rename the repository to MailBox and set the remote origin to a new one. For now I will leave the README.md file as it is.
+This will give me the CRUD endpoint I need to manipulate my mail related resources. After cloning I rename the repository to MailBox and set the remote origin to a new one. For now I will leave the `README.md` file as it is.
 
-For the first block we will modify the `/config/resources/domain.lisp`, `/config/resourecs/repository.lisp` and the `/config/dispatcher/dispatcher.ex` files.
+For the first block we will modify the `config/resources/domain.lisp`, `config/resourecs/repository.lisp` and the `config/dispatcher/dispatcher.ex` files.
 
-To add the necessary resource definitions add them to the domain.lisp file as follows:
+To add the necessary resource definitions, add them to the `domain.lisp` file as follows:
 
 ```lisp
 (define-resource mail ()
@@ -263,7 +267,7 @@ To add the necessary resource definitions add them to the domain.lisp file as fo
    :on-path "mails")
 ```
 
-This will create a resource description that we can manipulate on route /mails with the properties sender, title, body and ready.
+This will create a resource description that we can manipulate on route `/mails` with the properties sender, title, body and ready.
 
 Then add the prefix to the `repository.lisp` file:
 
@@ -271,7 +275,7 @@ Then add the prefix to the `repository.lisp` file:
  (add-prefix "example" "http://example.com/")
 ```
 
-We are almost there for a first test! The only thing left to do is to add the /mails route to the dispatcher (for more info check the documentation on http://mu.semte.ch). To do this add the following block of code to the dispatcher.ex file:
+We are almost there for a first test! The only thing left to do is to add the `/mails` route to the dispatcher (for more info check the documentation on http://mu.semte.ch). To do this add the following block of code to the `dispatcher.ex` file:
 
 ```
 match "/mails/*path" do
@@ -279,13 +283,13 @@ match "/mails/*path" do
 end
 ```
 
-Now fire this up and lets see what we have by typing:
+Now fire this up and lets see what we have by running the following command in the project root directory:
 
 ```bash
 docker-compose up
 ```
 
-in the a console in the project root directory. We don’t have a front end yet but with a tool like postman we can make GET, PATCH and POST calls to test the backend functionality.
+*Note: We don’t have a front-end, but with a tool like postman we can make GET, PATCH and POST calls to test the backend functionality.*
 
 A GET call to http://localhost/mails produces:
 ```json
@@ -300,7 +304,7 @@ A GET call to http://localhost/mails produces:
 
 Alright! Ok, no data yet, but we get back resource information.
 
-Lets do a post to make a new mail resource:
+Lets do a post request to make a new mail resource:
 
 ```conf
 URL: http://localhost/mails
@@ -338,7 +342,7 @@ This gives us the following reponse:
 
 That worked! In about 30 minutes we have a fully functional REST API endpoint for managing mail resources!
 
-To verify the original get again, this now produces:
+To verify the original get request again, this now produces:
 ```json
 {
   "data": {
@@ -356,9 +360,10 @@ To verify the original get again, this now produces:
 ```
 
 #### Enabling the reactive database
-Before we can start writing our reactive mail managing micro-service we will need to add a monitoring service to monitor the DB. This will be a lot easier than it sounds with mu.semte.ch. To start open the `docker-compose.yml` file and add the following lines at the bottom of the page:
+Before we can start writing our reactive mail managing micro-service, we will need to add a monitoring service to monitor the DB. This will be a lot easier than it sounds with mu.semte.ch. To start, open the `docker-compose.yml` file and add the following lines at the bottom of the file:
 
 ```yaml
+# ...
 delta:
   image: semtech/mu-delta-service:beta-0.7
   links:
@@ -370,13 +375,12 @@ delta:
     SUBSCRIBERSFILE: "/config/subscribers.json"
 ```
 
-This will add the monitoring service to our installation. The last thing to do for now is to change the link on the resource microservice by replacing
+This will add the monitoring service to our installation. The last thing to do for now is to change the link on the `resource` microservice by replacing
 ```yaml
 links:
   - db:database
 ```
 with
-
 ```yaml
 links:
   - delta:database
@@ -406,7 +410,7 @@ and then create `config/delta-service/subscribers.json` and put this JSON inside
 If we run `docker-compose rm` and then `docker-compose up` again, the delta service will be booting and already monitoring the changes that happen in the database! Of course we are not doing anything with them yet. So we will create a new micro-service just for this purpose.
 
 #### The mail-fetching microservice
-The next step is to build our mail handling microservice. To do this we create a new directory called `mail-service` in our platform base directory. Then we create a file in that directory called `Dockerfile`. We will start from a mu.semte.ch template to make developing this microservice that much quicker. Mu.semte.ch has templates for a bunch of languages ruby, javascript, python, … For this microservice we will go for python 2.7. To do this we simply need to create a `web.py` file which will serve as the location for our code. Next add the following to the Dockerfile:
+The next step is to build our mail handling microservice. To do this we create a new directory called `mail-service` in our base directory. Then we create a file in that directory called `Dockerfile`. We will start from a mu.semte.ch template to make developing this microservice that much quicker. Mu.semte.ch has templates for a bunch of languages ruby, javascript, python, … For this microservice we will go for python 2.7. To do this we simply need to create a `web.py` file which will serve as the location for our code. Next add the following to the Dockerfile:
 
 ```dockerfile
 # mail-service/Dockerfile
@@ -459,7 +463,7 @@ def process_mailbox(mailbox):
     save_mail(msg['From'], msg['Date'], msg['Subject'], content)
 ```
 
-As you can see the mail_helpers contain 2 functions, 1 to iterate over all emails in a mailbox and the other to save a single email to the triple store. Easy peasy!
+As you can see the mail_helpers contain 2 functions, one to iterate over all emails in a mailbox and the other to save a single email to the triple store. Easy peasy!
 
 Next we create `web.py`. For more information on how the python template can be used you can visit: https://github.com/mu-semtech/mu-python-template. I created the following method to process all mails:
 ```python
@@ -609,9 +613,9 @@ def processDelta():
   # continued later...
 ```
 
-After this for loop has run all the URI’s of mails that are ready to be send ill be in the mails_to_send array. Now we loop over the array and query the database for each URI in the set. And then we will fetch a mail object for every URI that is in the set.
+After this for loop has run, all the URI’s of mails that are ready to be send will be in the `mails_to_send` array. Now we loop over the array and query the database for each URI in the set. And then we will fetch a mail object for every URI that is in the set.
 
-Add the next code to `mail_helpers.py`:
+Add the following code to `mail_helpers.py`:
 ```python
 # mail-service/mail_helpers.py
 def load_mail(uri):
@@ -651,9 +655,9 @@ def load_mail(uri):
 
 This function will load the mail object from the triple store. There is still the chance that the ready predicate was sent for some other object, for a mail that does not have all required fields, or for an object that is not a mail but happens to use the same predicate.
 
-We will use this function to try to load a mail object for each URI. Because the query was build without OPTIONAL statements, we are certain that an the dictionary returned by the load_mail function will either have all keys or none.
+We will use this function to try to load a mail object for each URI. Because the query was built without OPTIONAL statements, we are certain that an the dictionary returned by the load_mail function will either have all keys or none.
 
-To send the mail I have copied the entire send_mail function from http://naelshiab.com/tutorial-send-email-python/ and modified it slightly to take into account the dictionary object that now describes the mail.
+To send the mail I have copied the entire `send_mail` function from http://naelshiab.com/tutorial-send-email-python/ and modified it slightly to take into account the dictionary object that now describes the mail.
 
 ```python
 # mail-service/mail_helpers.py
@@ -706,7 +710,7 @@ To test this you can send a POST request similar to this one to your local mu.se
 }
 ```
 
-If all went well then the person whose email address you filled in in the to field will have gotten a mail from you. Good job! You've just created a microservice.
+If all went well then the person whose email address you filled in in the to field will have gotten a mail from you. Good job! You've just created a mailing microservice.
 
 *This tutorial has been adapted from Jonathan Langens' mu.semte.ch articles. You can view them [here](https://mu.semte.ch/2017/02/16/reactive-microservice-hands-on-tutorial-part-1/) and [here](https://mu.semte.ch/2017/03/16/reactive-microservice-hands-on-tutorial-part-2/).*
 
