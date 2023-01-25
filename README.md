@@ -35,6 +35,7 @@ If you aren't familiar with the semantic.works stack/microservices yet, you migh
 - [Creating a JSON API](#creating-a-json-api)
 - [Creating a mail service](#building-a-mail-handling-service)
 - [Adding Ember Fastboot to your project](#adding-ember-fastboot-to-your-project)
+- [Adding a machine learning microservice to your mu.semte.ch project](#adding-a-machine-learning-microservice-to-your-musemtech-project)
 
 ### Creating a JSON API 
 Repetition is boring. Web applications oftentimes require the same functionality: to create, read, update and delete resources. Even if they operate in different domains. Or, in terms of a REST API, endpoints to GET, POST, PATCH and DELETE resources. Since productivity is one of the driving forces behind the mu.semte.ch architecture, the platform provides a microservice – [mu-cl-resources](https://github.com/mu-semtech/mu-cl-resources) – that generates a [JSONAPI](http://jsonapi.org/) compliant API for your resources based on a simple configuration describing the domain. In this tutorial we will explain how to setup such a configuration.
@@ -824,3 +825,73 @@ So, that’s it. In case of questions, feel free to reach out.
 
 *This tutorial has been adapted from Felix Ruiz De Arcaute's mu.semte.ch article. You can view it [here](https://mu.semte.ch/2017/03/23/adding-ember-fastboot-to-your-mu-project/)*
 
+
+### Adding a machine learning microservice to your mu.semte.ch project
+In this post I want to explore how to add a machine learning microservice to any existing [mu.semte.ch](http://mu.semte.ch/) project. I want to be able to upload an image and add the labels for that image to the SPARQL store.
+
+![](http://mu.semte.ch/wp-content/uploads/2017/08/docter-semtec-farious.png)
+
+#### TensorFlow
+
+TensorFlow’s inception library is great for image classification, it is a deep neural network that is trained to recognize objects. We can remove and retrain the outer layer easily (you can find a tutorial by Google on it). The microservice we will use wraps Inception and offers 3 routes:
+
+-   Add-Training-Example: through this route you tell the system that a certain image file is of a certain label
+-   Train: trains the model
+-   Classify: takes an image file and adds the classification to the triple store
+
+For an exisiting [mu.semte.ch](http://mu.semte.ch/) project you will probably want to add this microservice together with a trained graph and the use the classify route. While it is possible for a production system to learn, this may not be the best idea. Computers love to train, so they allocate all their computational resources to that, rather than keeping the rest smoothly running.
+
+#### Mu-image-classifier demo
+I have prepared [a small example project](https://github.com/langens-jonathan/mu-image-classifier) where you can see and test the classifier microservice. After you clone this it has no trained graph so the classify route will not work. The architecture of this demo app is as in the image below:  
+![](http://mu.semte.ch/wp-content/uploads/2017/08/mu-image-classifier.png)
+
+#### Train the model
+
+So you have cloned the repository, cd in to the directory and type:
+
+```bash
+docker-compose up
+```
+
+Open a browser and surf to [localhost](http://localhost). Click on the training route. To train the model you have to add classes (min 2) and then add images for those classes. Be sure not to use any other image format than JPG. After you have prepared the training set you can click the “Train” button. Your computer will be busy for a while now. If you need a more detailed tutorial on how to train there is one on the main page of the project you have just cloned, check the ‘/’ route!
+
+![](http://mu.semte.ch/wp-content/uploads/2017/08/Screenshot-from-2017-08-01-09-49-06s.png)
+
+#### Add the image classifier to a generic mu.semte.ch project
+After you have a trained graph it is really as simple as adding the image classifier microservice to your [mu.semte.ch](http://mu.semte.ch/) project and all will work. The assumption is though that the vocabulary that is used to describe the files in your triple store is the one that is documented on the [mu-file-service](https://github.com/mu-semtech/file-service).
+
+Add this snippet to your docker-compose.yml:
+```yml
+classifier:
+  image: flowofcontrol/mu-tf-image-classifier
+  links:
+    - db:database
+  environment:
+    CLASSIFIER_TRESHHOLD: 0.7
+  volumes:
+    - ./data/classifier/tf_files:/tf_files
+    - ./data/classifier/images:/images
+    - ./data/files:/files
+  ports:
+    - "6006:6006"
+```
+
+
+As you can see we include 3 folders and expose a port. On that port you can also make use of TensorBoard, which is TensorFlow’s administration board and that gives you access to all kind of statistics about our image classifier. Add this to your dispatcher (if you want to be able to retrain, you also have to add the other routes):
+```ex
+match "/classify/*path" do
+  Proxy.forward conn, path, "http://classifier:5000/classify/"
+end
+```
+
+The architecture of your app might then look somewhat like:  
+![](http://mu.semte.ch/wp-content/uploads/2017/08/integrating_mu-image-classifier.png)
+
+#### Classifying
+If you then have an image you want to classify with it’s metadata correctly in the triple store then you can call the classify route and your image will be tagged. The response of the classify route will also tell you the probabilities for other labels. Below is what I get when I use the demo app to classify a random “Darth Vader” search result from images.google.com:
+
+![](http://mu.semte.ch/wp-content/uploads/2017/08/Screenshot-from-2017-08-01-10-04-13s.png)
+
+That’s all folks!
+
+*This tutorial has been adapted from Jonathan Langens' mu.semte.ch article. You can view it [here](https://mu.semte.ch/2017/08/03/adding-a-machine-learning-microservice-to-your-mu-semte-ch-project/)*
