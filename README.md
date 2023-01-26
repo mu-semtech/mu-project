@@ -33,6 +33,7 @@ You can shut down using `docker-compose stop` and remove everything using `docke
 If you aren't familiar with the semantic.works stack/microservices yet, you might want to check out [why semantic tech?](https://mu.semte.ch/2017/03/23/adding-ember-fastboot-to-your-mu-project/)
 
 - [Creating a JSON API](#creating-a-json-api)
+- [Adding authentication to your mu-project](#adding-authentication-to-your-mu-project)
 - [Creating a mail service](#building-a-mail-handling-service)
 - [Adding Ember Fastboot to your project](#adding-ember-fastboot-to-your-project)
 - [Adding a machine learning microservice to your mu.semte.ch project](#adding-a-machine-learning-microservice-to-your-musemtech-project)
@@ -239,6 +240,173 @@ That's it! Now you can [fetch](http://jsonapi.org/format/#fetching-relationships
 
 *This tutorial has been adapted from Erika Pauwels' mu.semte.ch articles. You can view them [here](https://mu.semte.ch/2017/07/27/generating-a-jsonapi-compliant-api-for-your-resources/) and [here](https://mu.semte.ch/2017/08/17/generating-a-jsonapi-compliant-api-for-your-resources-part-2/).*
 
+
+### Adding authentication to your mu-project
+![](http://mu.semte.ch/wp-content/uploads/2017/08/customumize_for_user-1024x768.png)
+
+Web applications oftentimes require a user to be authenticated to access (part of) their application. For example a webshop may require a user to be logged in before placing an order. In a previous blog post we already explained [the semantic model to represent logged in users](https://mu.semte.ch/2017/08/24/representing-logged-in-users/). In this post we will show how to enable authentication in your app. We assume you already have  a [mu-project](https://github.com/mu-semtech/mu-project) running.
+
+Adding authentication to your application consists of two tasks:
+
+-   Adding registration so users can create a new account
+-   Adding a login service so users can authenticate themselves
+
+Both tasks require changes in the backend as well as in the frontend. Let’s start with the registration.
+
+#### Registration
+
+First, we will add registration to the project. The backend will be enriched with a microservice to manage accounts. The frontend will be augmented with an Ember addon providing components to register, unregister and  change a password.
+
+##### In the backend
+
+The [registration service](https://github.com/mu-semtech/registration-service) provides a service to create new accounts with a nickname and a password. To integrate the service in your project, add the following snippet to the `docker-compose.yml`.
+```yaml
+registration:
+  image: semtech/mu-registration-service:2.6.0
+  links:
+    - database:database
+```
+
+(Re)start the project.
+```bash
+docker-compose up
+```
+Next, configure the following routes in your dispatcher configuration in `config/dispatcher/dispatcher.ex`.
+```ex
+match "/accounts/\*path" do
+  Proxy.forward conn, path, "http://registration/accounts/"
+end
+```
+
+Restart the dispatcher service .
+```bash
+docker-compose restart dispatcher
+```
+
+From now on all requests starting with ‘/accounts’ will be forwarded to the registration service.
+
+##### In the frontend
+
+We now have an endpoint for registration in the backend. We need a complementary component in the frontend that provides a GUI to communicate with this backend.  This component is offered by the [ember-mu-registration](https://www.npmjs.com/package/ember-mu-registration) addon.
+
+First, install the addon by executing the following command in your Ember project.
+```bash
+ember install ember-mu-registration
+```
+
+Next, just include the `{{mu-register}}`, `{{mu-unregister}}` and `{{mu-change-password}}` component in your template.
+
+```hbs
+{{!-- app/templates/registration.hbs --}}
+{{mu-register}}
+```
+
+The components will automatically send the correct requests to the backend. You can customize the component’s template and/or behavior as explained in the addon’s [README](https://github.com/mu-semtech/ember-mu-registration#advanced-usage).
+
+Finally create a new user account through the newly added mu-register component. We can use this user to validate the login in the next step.
+
+#### Login
+Users can now create a new account, but how can they authenticate themselves in the app? In the next step we will enrich the backend with a login microservice and the frontend with a login form and a logout button.
+
+##### In the backend
+The [login service](https://github.com/mu-semtech/login-service) provides a service to associate a session with a user’s account if the correct user credentials are provided. Have a look at [the semantic works docs](https://github.com/Denperidge-Redpencil/project/blob/master/docs/references/representing-logged-in-users.md) if you want to know the semantic model behind the users, sessions and accounts. To integrate the service in your project, add the following snippet to the `docker-compose.yml`.
+```yaml
+login:
+  image: semtech/mu-login-service:2.8.0
+  links:
+    - database:database
+```
+
+(Re)start the project.
+```bash
+docker-compose up
+```
+
+Next, configure the following routes in your dispatcher configuration in `config/dispatcher/dispatcher.ex`.
+```ex
+match "/sessions/\*path" do
+  Proxy.forward conn, path, "http://login/sessions/"
+end
+```
+
+Restart the dispatcher service .
+```bash
+docker-compose restart dispatcher
+```
+
+From now on all requests starting with ‘/sessions’ will be forwarded to the login service.
+
+#### In the frontend
+Users can now be authenticated in the backend. Next, we need GUI components to login and logout and a mechanism to protect parts of the application so they are only accessible by authenticated users. These components are offered by the [ember-mu-login addon](https://github.com/mu-semtech/ember-mu-login) which requires [ember-simple-auth](https://github.com/simplabs/ember-simple-auth) to be installed, too.
+
+First, install the addons by executing the following commands in your Ember project.
+```bash
+ember install ember-simple-auth
+ember install ember-mu-login
+```
+
+##### Login form
+Next, we will generate a login route with a login form where the user can enter his credentials to authenticate.
+```bash
+ember generate route login
+```
+
+Add the `mu-login` component to the template.
+```hbs
+{{!-- app/templates/login.hbs --}}
+
+{{mu-login}}
+```
+
+##### Logout button
+Once the user logged in, we will show a button so the user can logout. We will use [ember-simple-auth’s ‘isAuthenticated’ property](https://github.com/simplabs/ember-simple-auth#basic-usage) to check the current session’s state. The session service needs to be injected in the application controller.
+
+```js
+// app/controllers/application.js
+import Ember from 'ember';
+
+export default Ember.Controller.extend({
+  session: Ember.inject.service('session')
+
+  // …
+});
+```
+
+Next, update the application’s template to show the logout button if the user is authenticated.
+```hbs
+{{!-- app/templates/application.hbs --}}
+{{#if session.isAuthenticated}}
+  {{mu-logout}}
+{{/if}}
+```
+
+Finally, mix the `ApplicationRouteMixin` in your application’s route. This mixin will automatically handle the [authenticationSucceeded](http://ember-simple-auth.com/api/classes/SessionService.html#event_authenticationSucceeded) and [invalidationSucceeded](http://ember-simple-auth.com/api/classes/SessionService.html#event_invalidationSucceeded) events.
+
+```js
+// app/routes/application.js
+import Ember from 'ember';
+import ApplicationRouteMixin from 'ember-simple-auth/mixins/application-route-mixin';
+
+export default Ember.Route.extend(ApplicationRouteMixin);
+```
+
+##### Protecting routes
+
+Users can now login in the application, but they are still able to access all pages regardless whether they are authenticated or not. To make a route in the application accessible only when the session is authenticated, mix the [AuthenticatedRouteMixin](http://ember-simple-auth.com/api/classes/AuthenticatedRouteMixin.html) into the respective route:
+```js
+// app/routes/protected.js
+import Ember from 'ember';
+import AuthenticatedRouteMixin from 'ember-simple-auth/mixins/authenticated-route-mixin';
+
+export default Ember.Route.extend(AuthenticatedRouteMixin);
+```
+
+This will make the route (and all of its subroutes) transition to the ‘login’ route if the session is not authenticated.
+
+#### Finished
+And that's it! Now you know how your mu-project can be easily augmented with authentication using a custom user registration service.
+
+*This tutorial has been adapted from Erika Pauwels' mu.semte.ch article. You can view it [here](https://mu.semte.ch/2017/11/23/adding-authentication-to-your-mu-project/)*
 
 
 
