@@ -15,7 +15,28 @@ services:
       - resource:resource
     volumes:
       - ./config/dispatcher:/config
+  resource:
+    image: semtech/mu-cl-resources:1.22.1
+    links:
+      - database:database
+    volumes:
+      - ./config/resources:/config
   database:
+    image: semtech/mu-authorization:0.6.0-beta.8
+    environment:
+      MU_SPARQL_ENDPOINT: "http://triplestore:8890/sparql"
+      ERROR_ON_UNWRITTEN_DATA: "true"
+    volumes:
+      - ./config/authorization:/config
+    labels:
+      - "logging=true"
+  delta-notifier:
+    image: semtech/mu-delta-notifier:0.1.0
+    volumes:
+      - ./config/delta:/config
+    labels:
+      - "logging=true"
+  triplestore:
     image: redpencil/virtuoso:1.1.0
     environment:
       SPARQL_UPDATE: "true"
@@ -23,9 +44,3 @@ services:
     volumes:
       - ./data/db:/data
       - ./config/virtuoso/virtuoso.ini:/data/virtuoso.ini
-  resource:
-    image: semtech/mu-cl-resources:1.21.1
-    links:
-      - database:database
-    volumes:
-      - ./config/resources:/config
