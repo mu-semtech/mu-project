@@ -9,7 +9,7 @@ defmodule Dispatcher do
   @json %{ accept: %{ json: true } }
   @html %{ accept: %{ html: true } }
 
-  layers [ :static, :services, :fall_back, :not_found ]
+  define_layers [ :static, :services, :fall_back, :not_found ]
 
   # In order to forward the 'themes' resource to the
   # resource service, use the following forward rule:
