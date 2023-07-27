@@ -1,7 +1,10 @@
 ## Tutorials
 If you aren't familiar with the semantic.works stack/microservices yet, you might want to check out [why semantic tech?](https://mu.semte.ch/2017/03/23/adding-ember-fastboot-to-your-mu-project/)
 
+Each of these tutorials starts with a mu-project docker-compose set-up.
+
 - [Creating a JSON API](#creating-a-json-api)
+- [Adding an ember UI to your project](#adding-an-ember-ui-to-your-project)
 - [Adding authentication to your mu-project](#adding-authentication-to-your-mu-project)
 - [Creating a mail service](#building-a-mail-handling-service)
 - [Adding Ember Fastboot to your project](#adding-ember-fastboot-to-your-project)
@@ -209,6 +212,162 @@ That's it! Now you can [fetch](http://jsonapi.org/format/#fetching-relationships
 
 *This tutorial has been adapted from Erika Pauwels' mu.semte.ch articles. You can view them [here](https://mu.semte.ch/2017/07/27/generating-a-jsonapi-compliant-api-for-your-resources/) and [here](https://mu.semte.ch/2017/08/17/generating-a-jsonapi-compliant-api-for-your-resources-part-2/).*
 
+
+### Adding an ember UI to your project
+This tutorial builds on the [previous one](#creating-a-json-api) to add a UI to manage books using [EmberJS](https://www.emberjs.com/).
+
+#### Ember in the frontend
+
+Our end-users access the services through EmberJS application.  This provides us with an integrated, styled and flexible view of the enabled microservices.  We’ll create a new ember application to allow end-users to list, create, and delete authors.  The advised way to build and develop EmberJS applications is using ember-cli.
+
+You can install ember-cli from ember-cli.com, or you can use the ember-docker found at https://github.com/madnificent/docker-ember .  Our examples assume you’ll use ember-docker.
+
+#### Build a new app
+
+First we create the new application.  The command is short, but it may take a while to fetch all NPM dependencies.  Grab a coffee while the computer works for you.
+
+```sh
+edi ember new books
+```
+
+#### Live reloading changes
+
+Let’s see if our new application runs.  Go into the books directory and run the ember serve command (available as eds).  Once the files have compiled, you can visit the site in your browser at localhost:4200.
+
+```sh
+cd books
+eds --proxy http://host # alt: ember serve --proxy http://localhost:80/
+```
+
+The proxy connects to our localhost on port 80 (yes, it’s called host in the ember-docker, rather than localhost).  We’ll use this later to fetch content from the microservices.  Let’s alter the title of our application, the browser’s view will update automatically.  Open app/application.hbs and change the following:
+
+```diff
+- {{!-- The following component displays Ember's default welcome message. --}}
+- {{welcome-page}}
+- {{!-- Feel free to remove this! --}}
++  <h2 id="title">My books</h2>
+```
+
+Boom, automatic updates in the browser.
+
+#### Connecting
+
+EmberJS applications roughly follow the Web-MVC pattern.  The applications have a rigid folder-structure, most content being in the app folder.  Ember-cli uses generators to generate basic stubs of content.  We create the books model, route and controller using ember-cli.  Check the helpers for ember generate model, ember generate route and ember generate controller, or the following:
+
+```sh
+edi ember generate model book title:string isbn:string
+edi ember generate route book
+edi ember generate controller book
+```
+
+The terminal output shows the created and updated files.  (note: generating new files can make watched files fail in Docker, just kill and restart eds should that happen.)
+
+We will fetch all books and render them in our template.  In routes/book.js:
+
+```diff
+=  export default class BooksRoute extends Route {
++    model(){
++      return this.store.findAll('book');
++    }
+=  }
+```
+
+We’ll display the found records in our template so we’re able to see the created records later on.  Add the following to templates/book.hbs
+
+```diff
++  <ul>
++    {{#each @model as |book|}}
++      <li>{{book.title}} <small>{{book.isbn}}</small></li>
++    {{/each}}
++  </ul>
+```
+
+#### Creating new books
+
+We’ll add a small input-form through which we can create new books at the bottom of our listing.  Two input fields and a create button will suffice for our example.
+
+In the app/templates/book.hbs template, we’ll add our create fields and button:
+
+```diff
++  <hr />
++ <form {{on "submit" this.createBook}} >
++   <dl>
++     <dt>Book title</dt>
++     <dd>
++        <Input @value={{this.newTitle}}
++               @placeholder="Thinking Fast and Slow" />
++     </dd>
++     <dt>ISBN</dt>
++     <dd>
++       <Input @value={{this.newIsbn}}
++              @placeholder="978-0374533557" />
++     </dd>
++   </dl>
++   <button type="submit">Create</button>
++ </form>
+```
+
+We’ll add this action in the controller and make it create the new book.  In app/controllers/book.hbs add the following:
+
+```diff
+=  import Controller from '@ember/controller';
++  import { action } from '@ember/object';
++  import { tracked } from '@glimmer/tracking';
++  import { inject as service } from '@ember/service';
+=
+=  export default class BooksController extends Controller {
++    @tracked newTitle = '';
++    @tracked newIsbn = '';
++
++    @service store;
++
++    @action
++    createBook(event) {
++      event.preventDefault();
++      // create the new book
++      const book = this.store.createRecord('book', {
++        title: this.newTitle,
++        isbn: this.newIsbn
++      });
++      book.save()
++      // clear the input fields
++      this.newTitle = '';
++      this.newIsbn = '';
++    }
+=  });
+```
+
+#### Removing books
+
+Removing books follows a similar path to creating new books.  We add a delete button to the template, and a delete action to the controller.
+
+In app/templates/book.hbs we alter:
+
+```diff
+= <ul>
+=  {{#each @model as |book|}}
++    <li>
++      {{book.title}}<small>{{book.isbn}}</small>
++      <button {{on "click" (fn this.removeBook book)}}>Remove</button>
++    </li>
+=  {{/each}}
+= </ul>
+```
+
+In app/controllers/book.hbs we alter:
+
+```diff
+=      this.newTitle = '';
+=      this.newIsbn = '';
+=    }
++
++    @action
++    removeBook( book, event ) {
++      event.preventDefault();
++      book.destroyRecord();
+=    }
+=  }
+```
 
 ### Adding authentication to your mu-project
 ![](http://mu.semte.ch/wp-content/uploads/2017/08/customumize_for_user-1024x768.png)
