@@ -222,7 +222,7 @@ This tutorial builds on the [previous one](#creating-a-json-api) to add a UI to 
 
 Our end-users access the services through EmberJS application.  This provides us with an integrated, styled and flexible view of the enabled microservices.  We’ll create a new ember application to allow end-users to list, create, and delete authors.  The advised way to build and develop EmberJS applications is using ember-cli.
 
-You can install ember-cli from ember-cli.com, or you can use the ember-docker found at https://github.com/madnificent/docker-ember .  Our examples assume you’ll use ember-docker.
+You can install ember-cli by following the instructions on [the emberjs website](https://cli.emberjs.com/), or you can keep everything in docker using the [ember-docker scripts](https://github.com/madnificent/docker-ember).  Our examples assume you’ll use ember-docker, which provides the `edi` and `eds` commands. If you're using a globally installed ember-cli, simply remove `edi` from any commands and replace `eds` with `ember serve`.
 
 #### Build a new app
 
@@ -230,6 +230,8 @@ First we create the new application.  The command is short, but it may take a wh
 
 ```sh
 edi ember new books
+# Or if using a globally installed ember-cli (see above)
+# ember new books
 ```
 
 #### Live reloading changes
