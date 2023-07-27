@@ -131,7 +131,9 @@ The definition of the model is very similar to that of the book. Add the followi
 ```lisp
 (define-resource author ()
   :class (s-prefix "schema:Author")
-  :properties `((:name :string ,(s-prefix "schema:name")))
+  :properties `((:name :string ,(s-prefix "schema:name"))
+                (:given-name :string ,(s-prefix "foaf:givenName"))
+                (:family-name :string ,(s-prefix "foaf:familyName")))
   :resource-base (s-url "http://mu.semte.ch/services/github/madnificent/book-service/authors/")
 :on-path "authors")
 ```
