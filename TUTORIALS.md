@@ -282,7 +282,7 @@ We will fetch all books and render them in our template.  In routes/books.js:
 =  export default class BooksRoute extends Route {
 +    @service store;
 +
-+    model(){
++    model() {
 +      return this.store.findAll('book');
 +    }
 =  }
@@ -313,12 +313,12 @@ In the app/templates/book.hbs template, we’ll add our create fields and button
 +     <dt>Book title</dt>
 +     <dd>
 +        <Input @value={{this.newTitle}}
-+               @placeholder="Thinking Fast and Slow" />
++               placeholder="Thinking Fast and Slow" />
 +     </dd>
 +     <dt>ISBN</dt>
 +     <dd>
 +       <Input @value={{this.newIsbn}}
-+              @placeholder="978-0374533557" />
++              placeholder="978-0374533557" />
 +     </dd>
 +   </dl>
 +   <button type="submit">Create</button>
@@ -346,9 +346,9 @@ We’ll add this action in the controller and make it create the new book.  In a
 +      // create the new book
 +      const book = this.store.createRecord('book', {
 +        title: this.newTitle,
-+        isbn: this.newIsbn
++        isbn: this.newIsbn,
 +      });
-+      book.save()
++      book.save();
 +      // clear the input fields
 +      this.newTitle = '';
 +      this.newIsbn = '';
@@ -365,7 +365,7 @@ In app/templates/book.hbs we alter:
 ```diff
 =    <li>
 =      {{book.title}}<small>{{book.isbn}}</small>
-+      <button {{on "click" (fn this.removeBook book)}}>Remove</button>
++      <button type="button" {{on "click" (fn this.removeBook book)}}>Remove</button>
 =    </li>
 ```
 
