@@ -256,7 +256,14 @@ Boom, automatic updates in the browser.
 
 #### Connecting
 
-EmberJS applications roughly follow the Web-MVC pattern.  The applications have a rigid folder-structure, most content being in the app folder.  Ember-cli uses generators to generate basic stubs of content.  We create the books model, route and controller using ember-cli.  Check the helpers for ember generate model, ember generate route and ember generate controller, or the following:
+EmberJS applications roughly follow the Web-MVC pattern.  The applications have a rigid folder-structure, most content being in the app folder.  Ember-cli uses generators to generate basic stubs of content. Since the APIs we're using follow the json-api specification, we can avoid writing custom adapter and serialiser code by simply generating default ones for our application to use if a specific one is not specified:
+
+```sh
+edi ember generate adapter application
+edi ember generate serializer application
+```
+
+We create the books model, route and controller using ember-cli.  Check the helpers for ember generate model, ember generate route and ember generate controller, or the following:
 
 ```sh
 edi ember generate model book title:string isbn:string
