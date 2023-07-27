@@ -260,28 +260,35 @@ EmberJS applications roughly follow the Web-MVC pattern.  The applications have 
 
 ```sh
 edi ember generate model book title:string isbn:string
-edi ember generate route book
-edi ember generate controller book
+edi ember generate route books
+edi ember generate controller books
 ```
 
 The terminal output shows the created and updated files.  (note: generating new files can make watched files fail in Docker, just kill and restart eds should that happen.)
 
-We will fetch all books and render them in our template.  In routes/book.js:
+We will fetch all books and render them in our template.  In routes/books.js:
 
 ```diff
+=  import Route from '@ember/routing/route';
++  import { inject as service } from '@ember/service';
+=
 =  export default class BooksRoute extends Route {
++    @service store;
++
 +    model(){
 +      return this.store.findAll('book');
 +    }
 =  }
 ```
 
-We’ll display the found records in our template so we’re able to see the created records later on.  Add the following to templates/book.hbs
+We’ll display the found records in our template so we’re able to see the created records later on.  Add the following to templates/books.hbs
 
 ```diff
 +  <ul>
 +    {{#each @model as |book|}}
-+      <li>{{book.title}} <small>{{book.isbn}}</small></li>
++      <li>
++        {{book.title}} <small>{{book.isbn}}</small>
++      </li>
 +    {{/each}}
 +  </ul>
 ```
@@ -311,7 +318,7 @@ In the app/templates/book.hbs template, we’ll add our create fields and button
 + </form>
 ```
 
-We’ll add this action in the controller and make it create the new book.  In app/controllers/book.hbs add the following:
+We’ll add this action in the controller and make it create the new book.  In app/controllers/books.js add the following:
 
 ```diff
 =  import Controller from '@ember/controller';
@@ -319,7 +326,8 @@ We’ll add this action in the controller and make it create the new book.  In a
 +  import { tracked } from '@glimmer/tracking';
 +  import { inject as service } from '@ember/service';
 =
-=  export default class BooksController extends Controller {
+-  export default class BooksController extends Controller {}
++  export default class BooksController extends Controller {
 +    @tracked newTitle = '';
 +    @tracked newIsbn = '';
 +
@@ -338,7 +346,7 @@ We’ll add this action in the controller and make it create the new book.  In a
 +      this.newTitle = '';
 +      this.newIsbn = '';
 +    }
-=  });
++  });
 ```
 
 #### Removing books
@@ -348,17 +356,13 @@ Removing books follows a similar path to creating new books.  We add a delete bu
 In app/templates/book.hbs we alter:
 
 ```diff
-= <ul>
-=  {{#each @model as |book|}}
-+    <li>
-+      {{book.title}}<small>{{book.isbn}}</small>
+=    <li>
+=      {{book.title}}<small>{{book.isbn}}</small>
 +      <button {{on "click" (fn this.removeBook book)}}>Remove</button>
-+    </li>
-=  {{/each}}
-= </ul>
+=    </li>
 ```
 
-In app/controllers/book.hbs we alter:
+In app/controllers/books.js we alter:
 
 ```diff
 =      this.newTitle = '';
@@ -366,10 +370,10 @@ In app/controllers/book.hbs we alter:
 =    }
 +
 +    @action
-+    removeBook( book, event ) {
++    removeBook(book, event) {
 +      event.preventDefault();
 +      book.destroyRecord();
-=    }
++    }
 =  }
 ```
 
