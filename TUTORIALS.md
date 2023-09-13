@@ -26,7 +26,7 @@ services:
   resource:
     image: semtech/mu-cl-resources:1.20.0
     links:
-      - db:database
+      - database:database
     volumes:
       - ./config:/config
   # ...
@@ -387,7 +387,7 @@ In app/controllers/books.js we alter:
 ### Adding authentication to your mu-project
 ![](http://mu.semte.ch/wp-content/uploads/2017/08/customumize_for_user-1024x768.png)
 
-Web applications oftentimes require a user to be authenticated to access (part of) their application. For example a webshop may require a user to be logged in before placing an order. In a previous blog post we already explained [the semantic model to represent logged in users](https://mu.semte.ch/2017/08/24/representing-logged-in-users/). In this post we will show how to enable authentication in your app. We assume you already have  a [mu-project](https://github.com/mu-semtech/mu-project) running.
+Web applications oftentimes require a user to be authenticated to access (part of) their application. For example a webshop may require a user to be logged in before placing an order. In a previous blog post we already explained [the semantic model to represent logged in users](https://mu.semte.ch/2017/08/24/representing-logged-in-users/). In this post we will show how to enable authentication in your app. We assume you already have  a [mu-project](https://github.com/mu-semtech/mu-project) running, with an ember front-end project.
 
 Adding authentication to your application consists of two tasks:
 
@@ -555,7 +555,7 @@ And that's it! Now you know how your mu-project can be easily augmented with aut
 
 
 ### Building a mail handling service
-My goal for this short coding session is to have a mail handling service that will allow me to list and maninpulate mails through a JSON:API REST back-end. And have that service pick up when I write a mail to the database and send it automatically. You can see the result of this project at https://github.com/langens-jonathan/ReactiveMailServiceExample.
+My goal for this short coding session is to have a mail handling service that will allow me to list and manipulate mails through a JSON:API REST back-end. And have that service pick up when I write a mail to the database and send it automatically. You can see the result of this project at https://github.com/langens-jonathan/ReactiveMailServiceExample.
 
 #### Gain a head-start with mu-project
 For this project I started with cloning the mu-project repository:
@@ -610,7 +610,8 @@ A GET call to http://localhost/mails produces:
   "data": [],
   "links": {
     "last": "/mails/",
-    "first": "/mails/"
+    "first": "/mails/",
+    "self": "mails"
   }
 }
 ```
@@ -680,7 +681,7 @@ Before we can start writing our reactive mail managing micro-service, we will ne
 delta:
   image: semtech/mu-delta-service:beta-0.7
   links:
-    - db:db
+    - database:database
   volumes:
     - ./config/delta-service:/config
   environment:
@@ -691,7 +692,7 @@ delta:
 This will add the monitoring service to our installation. The last thing to do for now is to change the link on the `resource` microservice by replacing
 ```yaml
 links:
-  - db:database
+  - database:database
 ```
 with
 ```yaml
@@ -703,8 +704,8 @@ The final steps are to create the configuration and subscribers files. Create a 
 
 ```conf
 # made by Langens Jonathan
-queryURL=http://db:8890/sparql
-updateURL=http://db:8890/sparql
+queryURL=http://database:8890/sparql
+updateURL=http://database:8890/sparql
 sendUpdateInBody=true
 calculateEffectives=true
 ```
@@ -849,7 +850,7 @@ There are 2 types of delta reports, you have potential inserts and effective ins
 ```
 *You can view the full version [here](https://gist.githubusercontent.com/langens-jonathan/cd5db8e9f68861662d888dad77f93662/raw/84adc69f9fd3143f45c05c0a5cefdf1ca9b95b55/gistfile1.txt).*
 
-A report states the query that was send, an array of inserted objects and an array of deleted objects: Inserted or deleted objects represent a single triple with s, p and o being subject, predicate and object.
+A report states the query that was sent, an array of inserted objects and an array of deleted objects: Inserted or deleted objects represent a single triple with s, p and o being subject, predicate and object.
 
 #### Expanding our mail handling microservice
 We need to notify the delta service of the existence of our mail handling service. We do this using the `subscribers.json` file that was created before. Change it so it looks like:
@@ -870,7 +871,7 @@ In the `docker-compose.yml` file we need to alter the delta-service definition t
   delta:
     image: semtech/mu-delta-service:beta-0.8
     links:
-      - db:db
+      - database:database
       - mailservice:mailservice
     volumes:
       - ./config/delta-service:/config
@@ -898,7 +899,7 @@ Then we define a new method that will:
 - Load the delta report into a variable
 - Define some variables.
 
-Lastly we define an array that will hold the URI’s of all emails that need to be send.
+Lastly we define an array that will hold the URI’s of all emails that need to be sent.
 
 
 ```python
@@ -912,7 +913,7 @@ def processDelta():
   # continued later...
 ```
 
-We will loop over all inserted triples to check for mails that are ready to be send:
+We will loop over all inserted triples to check for mails that are ready to be sent:
 ```python
 # mail-service/web.py
 def processDelta():
@@ -1176,7 +1177,7 @@ Add this snippet to your docker-compose.yml:
 classifier:
   image: flowofcontrol/mu-tf-image-classifier
   links:
-    - db:database
+    - database:database
   environment:
     CLASSIFIER_TRESHHOLD: 0.7
   volumes:
