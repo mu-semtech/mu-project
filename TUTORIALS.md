@@ -435,13 +435,14 @@ We now have an endpoint for registration in the backend. We need a complementary
 First, install the addon by executing the following command in your Ember project.
 ```bash
 ember install ember-mu-registration
+ember install ember-resolver
 ```
 
 Next, just include the `{{mu-register}}`, `{{mu-unregister}}` and `{{mu-change-password}}` component in your template.
 
 ```hbs
 {{!-- app/templates/registration.hbs --}}
-{{mu-register}}
+<MuRegister />
 ```
 
 The components will automatically send the correct requests to the backend. You can customize the component’s template and/or behavior as explained in the addon’s [README](https://github.com/mu-semtech/ember-mu-registration#advanced-usage).
