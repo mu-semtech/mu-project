@@ -13,7 +13,7 @@ Setting up your environment is done in three easy steps:
 3. Lastly, simply start the docker-compose.
 
 > [!WARNING]
-> Many of the containers used have issues with high limits on open file descriptors, so you might need [to work around this](#containers-stuck-while-starting-using-100-cpu)
+> Many of the containers used have issues with high limits on open file descriptors, so you might need [to work around this](https://github.com/mu-semtech/project/blob/master/docs/how-tos/troubleshooting---slow-starting-containers.md)
 
 #### Hooking things up with docker-compose
 
@@ -36,28 +36,3 @@ You can shut down using `docker-compose stop` and remove everything using `docke
 
 To help you find your feet with your first semantic works projects, we've collected [a few tutorials](TUTORIALS.md).
 
-## Troubleshooting
-
-### Containers stuck while starting, using 100% CPU
-Some docker images used in mu-project, notably those based on sbcl (lisp) and elixir images, are very slow and CPU intensive to start if the limits of open file descriptors are very high for the container. This leads to a process using 100% of a CPU for some time before that container becomes usable. This can be worked around by setting the defaults for new containers in the docker daemon config (/etc/docker/daemon.json (create it if it doesn't exist)):
-
-```json
-{
-  "default-ulimits": {
-    "nofile": {
-      "Hard": 104583,
-      "Name": "nofile",
-      "Soft": 104583
-    }
-  }
-}
-```
-
-Or, if you want these high defaults for some reason, you can set per-container limits in a docker-compose file for each of the mu-project services:
-
-```yml
-    ulimits:
-      nofile:
-        soft: 104583
-        hard: 104583
-```
