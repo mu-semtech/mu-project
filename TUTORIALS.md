@@ -573,7 +573,8 @@ To add the necessary resource definitions, add them to the `domain.lisp` file as
 ```lisp
 (define-resource mail ()
    :class (s-prefix "example:Mail")
-   :properties `((:sender :string ,(s-prefix "example:sender"))
+   :properties `((:from :string ,(s-prefix "example:from"))
+                 (:to :string ,(s-prefix "example:to"))
                  (:subject :string ,(s-prefix "example:subject"))
                  (:content :string ,(s-prefix "example:content"))
                  (:ready :string ,(s-prefix "example:ready")))
@@ -628,7 +629,8 @@ Body:
   {
     "data":{
       "attributes":{
-        "sender":"flowofcontrol@gmail.com",
+        "from":"flowofcontrol@gmail.com",
+        "to": "mail@example.com",
         "subject":"Mu Semtech Mail Server",
         "content":"This is a test for the Mu Semtech Mail Server.",
         "ready":"no"
@@ -643,7 +645,8 @@ This gives us the following reponse:
 {
   "data": {
     "attributes": {
-      "sender": "flowofcontrol@gmail.com",
+      "from": "flowofcontrol@gmail.com",
+      "to": "mail@example.com",
       "subject": "Mu Semtech Mail Server",
       "content": "This is a test for the Mu Semtech Mail Server.",
       "ready": "no"
@@ -662,7 +665,8 @@ To verify the original get request again, this now produces:
 {
   "data": {
     "attributes": {
-      "sender": "flowofcontrol@gmail.com",
+      "from": "flowofcontrol@gmail.com",
+      "to": "mail@example.com",
       "subject": "Mu Semtech Mail Server",
       "content": "This is a test for the Mu Semtech Mail Server.",
       "ready": "no"
@@ -725,11 +729,11 @@ and then create `config/delta-service/subscribers.json` and put this JSON inside
 If we run `docker-compose rm` and then `docker-compose up` again, the delta service will be booting and already monitoring the changes that happen in the database! Of course we are not doing anything with them yet. So we will create a new micro-service just for this purpose.
 
 #### The mail-fetching microservice
-The next step is to build our mail handling microservice. To do this we create a new directory called `mail-service` in our base directory. Then we create a file in that directory called `Dockerfile`. We will start from a mu.semte.ch template to make developing this microservice that much quicker. Mu.semte.ch has templates for a bunch of languages ruby, javascript, python, … For this microservice we will go for python 2.7. To do this we simply need to create a `web.py` file which will serve as the location for our code. Next add the following to the Dockerfile:
+The next step is to build our mail handling microservice. To do this we create a new directory called `mail-service` in our base directory. Then we create a file in that directory called `Dockerfile`. We will start from a mu.semte.ch template to make developing this microservice that much quicker. Mu.semte.ch has templates for a bunch of languages ruby, javascript, python, … For this microservice we will go for python 3. To do this we simply need to create a dockerfile to build the container and a `web.py` file which will serve as the location for our code. First we create the file 'Dockerfile' in our mail-service directory:
 
 ```dockerfile
 # mail-service/Dockerfile
-FROM semtech/mu-python-template
+FROM semtech/mu-python-template:2.0.0-beta.2
 
 MAINTAINER Langens Jonathan <flowofcontrol@gmail.com>
 ```
@@ -739,73 +743,102 @@ I know it doesn’t say much, but it doesn’t need to. The python template will
 Then we need to add some mail manipulating functionality. Since this is not really the objective of this post I create a `mail_helpers.py` file and paste the following code in there:
 ```python
 # mail-service/mail_helpers.py
-import sys
-import imaplib
-import getpass
 import email
-import datetime
 import uuid
 import helpers
+from escape_helpers import sparql_escape_string
 
-def save_mail(sender, date, subject, content):
-  str_uuid = str(uuid.uuid4())
-  insert_query = "INSERT DATA\n{\nGRAPH <http://mu.semte.ch/application>\n{\n<http://mail.com/examples/mail/" + str_uuid + "> a <http://mail.com/Mail>;\n"
-  insert_query += "<http://mail.com/from> \"" + sender + "\";\n"
-  insert_query += "<http://mail.com/date> \"" + date + "\";\n"
-  insert_query += "<http://mail.com/content> \"" + content + "\";\n"
-  insert_query += "<http://mail.com/subject> \"" + subject + "\";\n"
-  insert_query += "<http://mu.semte.ch/vocabularies/core/uuid> \"" + str_uuid + "\".\n"
-  insert_query += "}\n}"
-  print "query:\n", insert_query
-  helpers.update(insert_query)
+def save_mail(sender, subject, content):
+    str_uuid = str(uuid.uuid4())
+    insert_query = (
+        f'INSERT DATA\n{{\nGRAPH <http://mu.semte.ch/application>\n{{'
+        f'    <http://example.com/examples/mail/{str_uuid}> a <http://example.com/Mail>;\n'
+        f'    <http://example.com/from> {sparql_escape_string(sender)};\n'
+        f'    <http://example.com/content> {sparql_escape_string(content)};\n'
+        f'    <http://example.com/subject> {sparql_escape_string(subject)};\n'
+        f'  <http://mu.semte.ch/vocabularies/core/uuid> "{str_uuid}".\n'
+        f'}}\n}}'
+    )
+    helpers.log(f"query:\n{insert_query}")
+    helpers.update(insert_query)
 
 def process_mailbox(mailbox):
-  rv, data = mailbox.search(None, "ALL")
-  if rv != 'OK':
-    print "No messages found!"
-  return
+    rv, data = mailbox.search(None, "ALL")
+    if rv != 'OK' or not data[0]:
+        helpers.log("No messages found!")
+        return
+    else:
+        helpers.log("You've got mail!")
 
-  for num in data[0].split():
-    rv, data = mailbox.fetch(num, '(RFC822)')
-    if rv != 'OK':
-      print "ERROR getting message", num
-    return
-  
-    msg = email.message_from_string(data[0][1])
-    content = str(msg.get_payload())
-    content = content.replace('\n','')
+    for num in data[0].split():
+        rv, data = mailbox.fetch(num, '(RFC822)')
+        if rv != 'OK':
+            helpers.log("ERROR getting message", num)
+            return
 
-    save_mail(msg['From'], msg['Date'], msg['Subject'], content)
+        msg = email.message_from_string(data[0][1].decode())
+        content = str(msg.get_payload())
+
+        save_mail(msg['From'], msg['Date'], msg['Subject'], content)
 ```
 
 As you can see the mail_helpers contain 2 functions, one to iterate over all emails in a mailbox and the other to save a single email to the triple store. Easy peasy!
 
-Next we create `web.py`. For more information on how the python template can be used you can visit: https://github.com/mu-semtech/mu-python-template. I created the following method to process all mails:
+Next we create `web.py`. For more information on how the python template can be used you can visit: https://github.com/mu-semtech/mu-python-template. We create the following method to add a GET route to process all mails:
 ```python
 # mail-service/web.py
+from os import environ
+from imaplib import IMAP4, IMAP4_SSL
+
+import mail_helpers
+
+EMAIL_ADDRESS = environ['EMAIL_ADDRESS']
+EMAIL_PWD = environ['EMAIL_PWD']
+
 @app.route("/fetchMails")
 def fetchMailMethod():
-  EMAIL_ADDRESS = "address"
-  EMAIL_PWD = "pwd"
+    MAIL_SERVER = IMAP4_SSL(environ['IMAP_SERVER'])
 
-  MAIL_SERVER = imaplib.IMAP4_SSL('imap.gmail.com')
+    try:
+        MAIL_SERVER.login(EMAIL_ADDRESS, EMAIL_PWD)
+    except IMAP4.error:
+        return "Unable to log in to IMAP server", 503
 
-  try:
-    MAIL_SERVER.login(EMAIL_ADDRESS, EMAIL_PWD)
-    except imaplib.IMAP4.error:
-     print "Logging into mailbox failed! "
+    rv, data = MAIL_SERVER.select("INBOX")
+    if rv == 'OK':
+        mail_helpers.process_mailbox(MAIL_SERVER)
+        MAIL_SERVER.close()
 
-  rv, data = MAIL_SERVER.select("INBOX")
-  if rv == 'OK':
-    mail_helpers.process_mailbox(MAIL_SERVER)
-    MAIL_SERVER.close()
+    MAIL_SERVER.logout()
 
-  MAIL_SERVER.logout()
-
-  return "ok"
+    return "ok"
 ```
 
 This method is rather straightforward: it just opens a connection to an email address and opens the inbox mailbox. It then selects it for processing, thus inserting all mails into the triple store.
+
+The last step to create this service is to add it to our docker-compose.yml file:
+
+```yaml
+  mailservice:
+    build: ./mail-service
+    links:
+      - database:database
+    ports:
+      # Forward a port for testing purposes
+      - "8888:80"
+    environment:
+      # Set the python template to development mode to enable auto reloading
+      MODE: "development"
+      LOG_LEVEL: "debug"
+      # This email should work but won't send any real mails, check ethereal.email for details
+      # You can replace this with a real email SMTP server but beware, this will send real mails!
+      EMAIL_ADDRESS: "kurtis.stamm@ethereal.email"
+      EMAIL_PWD: "zwaFZ3P5RDnDcWwRhA"
+      IMAP_SERVER: "imap.ethereal.email"
+    volumes:
+      # Bind our repo to the container, so we can edit files without having to rebuild the container
+      - ./mail-service:/app
+```
 
 At this point, we have:
 - Defined a JSONAPI through which we can access our emails, using the standard mu.semte.ch stack
