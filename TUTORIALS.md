@@ -1,5 +1,5 @@
 ## Tutorials
-If you aren't familiar with the semantic.works stack/microservices yet, you might want to check out [why semantic tech?](https://mu.semte.ch/2017/03/23/adding-ember-fastboot-to-your-mu-project/)
+If you aren't familiar with the semantic.works stack/microservices yet, you might want to check out [why semantic tech?](https://github.com/mu-semtech/project/blob/master/docs/discussions/why-semantic-tech.md)
 
 Each of these tutorials starts with a mu-project docker-compose set-up.
 
