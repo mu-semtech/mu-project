@@ -590,12 +590,27 @@ Then add the prefix to the `repository.lisp` file:
  (add-prefix "example" "http://example.com/")
 ```
 
-We are almost there for a first test! The only thing left to do is to add the `/mails` route to the dispatcher (for more info check the documentation on http://mu.semte.ch). To do this add the following block of code to the `dispatcher.ex` file:
+We're almost there for a first test! Two small pieces of wiring left to do:
+
+First add the `/mails` route to the dispatcher (for more info check [the documentation](https://github.com/mu-semtech/mu-dispatcher/)). To do this add the following block of code to the `dispatcher.ex` file:
 
 ```
 match "/mails/*path" do
   Proxy.forward conn, path, "http://resource/mails/"
 end
+```
+
+Second, configure `mu-authorization` to allow anyone to edit Mail resources. We won't add proper access rules as that's a topic for a different tutorial and more info can be found [in the repo for the project](https://github.com/mu-semtech/mu-authorization). We edit the file `config/authorization/config.ex` to add to the public `GroupSpec`:
+
+```diff
+         graphs: [ %GraphSpec{
+                     graph: "http://mu.semte.ch/graphs/public",
+                     constraint: %ResourceConstraint{
+                       resource_types: [
+-                        "http://xmlns.com/foaf/0.1/Person"
++                        "http://xmlns.com/foaf/0.1/Person",
++                        "http://example.com/Mail"
+                       ],
 ```
 
 Now fire this up and lets see what we have by running the following command in the project root directory:
@@ -677,56 +692,6 @@ To verify the original get request again, this now produces:
    }
 }
 ```
-
-#### Enabling the reactive database
-Before we can start writing our reactive mail managing micro-service, we will need to add a monitoring service to monitor the DB. This will be a lot easier than it sounds with mu.semte.ch. To start, open the `docker-compose.yml` file and add the following lines at the bottom of the file:
-
-```yaml
-# ...
-delta:
-  image: semtech/mu-delta-service:beta-0.7
-  links:
-    - database:database
-  volumes:
-    - ./config/delta-service:/config
-  environment:
-    CONFIGFILE: "/config/config.properties"
-    SUBSCRIBERSFILE: "/config/subscribers.json"
-```
-
-This will add the monitoring service to our installation. The last thing to do for now is to change the link on the `resource` microservice by replacing
-```yaml
-links:
-  - database:database
-```
-with
-```yaml
-links:
-  - delta:database
-```
-
-The final steps are to create the configuration and subscribers files. Create a file called `config.properties` at the location `config/delta-service/config.properties` and write the following lines in that file:
-
-```conf
-# made by Langens Jonathan
-queryURL=http://database:8890/sparql
-updateURL=http://database:8890/sparql
-sendUpdateInBody=true
-calculateEffectives=true
-```
-
-and then create `config/delta-service/subscribers.json` and put this JSON inside:
-
-```json
-{
-  "potentials":[
-  ],
-  "effectives":[
-  ]
-}
-```
-
-If we run `docker-compose rm` and then `docker-compose up` again, the delta service will be booting and already monitoring the changes that happen in the database! Of course we are not doing anything with them yet. So we will create a new micro-service just for this purpose.
 
 #### The mail-fetching microservice
 The next step is to build our mail handling microservice. To do this we create a new directory called `mail-service` in our base directory. Then we create a file in that directory called `Dockerfile`. We will start from a mu.semte.ch template to make developing this microservice that much quicker. Mu.semte.ch has templates for a bunch of languages ruby, javascript, python, … For this microservice we will go for python 3. To do this we simply need to create a dockerfile to build the container and a `web.py` file which will serve as the location for our code. First we create the file 'Dockerfile' in our mail-service directory:
@@ -840,81 +805,54 @@ The last step to create this service is to add it to our docker-compose.yml file
       - ./mail-service:/app
 ```
 
+Running `docker-compose up` again will start our new service, which should auto reload with changes to the python code, though changing the configuration of our other services will require to restart them for the changes to be picked up.
+
 At this point, we have:
 - Defined a JSONAPI through which we can access our emails, using the standard mu.semte.ch stack
 - Built a custom service which fetches the emails from our mail account and inserts them into the triplestore using the right model
 
-Now we will use these services in combination with the delta service, to discover which emails were inserted into the database, and to perform reactive computations on it.
+Now we will use these services in combination with the delta notifier, to discover which emails were inserted into the database, and to perform reactive computations on it.
 
-#### The delta service
+#### Mu-authorization and the delta-notifier
 
-The delta service’s responsibilities are:
+You may have noticed that the default mu-project docker-compose.yml contains a service called `database` but the image is `semtech/mu-authorization`, this has two responsibilities:
 
-- Acting as the SPARQL endpoint for the microservices
-- Calculating the differences (deltas) that a query will introduce in the database
-- Notifying interested parties of these differences
+- Act as the SPARQL endpoint, handling authorization logic before forwarding approved queries or updates to the triplestore
+- Producing 'delta's describing the changes and forwarding them to clients defined in `config/authorization/delta.ex`
 
-For this hands on we use version beta-0.8 of the delta service.
-
-##### What do these delta reports look like?
-There are 2 types of delta reports, you have potential inserts and effective inserts. A report for either will look like:
-```json
-{
-  "delta": [
-    {
-      "type": "effective",
-      "graph": "http://mu.semte.ch/application",
-      "inserts": [
-        {
-          "s": {
-            "value": "http://example.com/mails/58B187FA6AA88E0009000001",
-            "type": "uri"
-          },
-          "p": {
-            "value": "http://example.com/subject",
-            "type": "uri"
-          },
-          "o": {
-            "value": "Mu Semtech Mail Server",
-            "type": "literal"
-          }
-        },
-       ...
-}
-```
-*You can view the full version [here](https://gist.githubusercontent.com/langens-jonathan/cd5db8e9f68861662d888dad77f93662/raw/84adc69f9fd3143f45c05c0a5cefdf1ca9b95b55/gistfile1.txt).*
-
-A report states the query that was sent, an array of inserted objects and an array of deleted objects: Inserted or deleted objects represent a single triple with s, p and o being subject, predicate and object.
+This is already configured for us to send these deltas to another service, the delta-notifier. This service is configured in `config/delta/rules.js`, which defines which triples different microservices are interested in. It sends matching deltas to these services using REST. The format for these messages is detailed [in the delta-notifier repository](https://github.com/mu-semtech/delta-notifier#delta-formats).
 
 #### Expanding our mail handling microservice
-We need to notify the delta service of the existence of our mail handling service. We do this using the `subscribers.json` file that was created before. Change it so it looks like:
 
-```json
-{
-  "potentials":[
-  ],
-    "effectives":[
-    "http://mailservice/process_delta"
-  ]
-}
+We need to notify the delta-notifier of the existence of our mail handling service. To do this we replace the `config/delta/rules.js` file to send any deltas for subjects of `rdf:type` `example:Mail` to the mail service:
+
+```js
+export default [
+  {
+    match: {
+      predicate: {
+        type: "uri",
+        value: "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+      },
+      object: {
+        type: "uri",
+        value: "http://example.com/Mail",
+      },
+    },
+    callback: {
+      url: "http://mailservice/process_delta",
+      method: "POST",
+    },
+    options: {
+      resourceFormat: "v0.0.1",
+      gracePeriod: 250,
+      ignoreFromSelf: true,
+    },
+  },
+];
 ```
 
-In the `docker-compose.yml` file we need to alter the delta-service definition to look like:
-
-```yaml
-  delta:
-    image: semtech/mu-delta-service:beta-0.8
-    links:
-      - database:database
-      - mailservice:mailservice
-    volumes:
-      - ./config/delta-service:/config
-    environment:
-      CONFIGFILE: "/config/config.properties"
-      SUBSCRIBERSFILE: "/config/subscribers.json"
-```
-
-That way the delta service can talk to the mailservice.
+Don't forget to restart your delta notifier with `docker compose restart delta-notifier`.
 
 To handle delta reports in our mail handling microservice we will need 2 things:
 
@@ -925,9 +863,6 @@ To get access to this we edit `web.py` to define a new method that will:
 - Handle the incoming delta reports
 - Load the delta report into a variable
 - Define some variables.
-
-Lastly we define an array that will hold the URIs of all emails that need to be sent.
-
 
 ```python
 # mail-service/web.py
@@ -944,16 +879,15 @@ def processDelta():
     value_mail_is_ready = "yes"
 
     # Loop over all inserted triples to check for mails that are ready to be sent:
-
-    for delta in delta_report['delta']:
-        for triple in delta['inserts']:
-            if(triple['p']['value'] == predicate_mail_is_ready):
-                if(triple['o']['value'] == value_mail_is_ready):
-                    mails_to_send.add(triple['s']['value'])
+    for delta in delta_report:
+        for insert in delta['inserts']:
+            if (insert['predicate']['value'] == predicate_mail_is_ready
+                    and insert['object']['value'] == value_mail_is_ready):
+                mails_to_send.add(insert['subject']['value'])
   # continued later...
 ```
 
-After this for loop has run, all the URI’s of mails that are ready to be send will be in the `mails_to_send` array. Now we loop over the array and query the database for each URI in the set. And then we will fetch a mail object for every URI that is in the set.
+After this for loop has run, all the URIs of mails that are ready to be send will be in the `mails_to_send` array. Now we loop over the array and query the database for each URI in the set. And then we will fetch a mail object for every URI that is in the set.
 
 Add the following code to `mail_helpers.py`:
 ```python
