@@ -14,6 +14,21 @@ services:
     volumes:
       - ./config/dispatcher:/config
   database:
+    image: semtech/mu-authorization:0.6.0-beta.8
+    environment:
+      MU_SPARQL_ENDPOINT: "http://triplestore:8890/sparql"
+      ERROR_ON_UNWRITTEN_DATA: "true"
+    volumes:
+      - ./config/authorization:/config
+    labels:
+      - "logging=true"
+  delta-notifier:
+    image: semtech/mu-delta-notifier:0.1.0
+    volumes:
+      - ./config/delta:/config
+    labels:
+      - "logging=true"
+  triplestore:
     image: redpencil/virtuoso:1.2.0-rc.1
     environment:
       SPARQL_UPDATE: "true"
