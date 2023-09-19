@@ -921,43 +921,35 @@ To handle delta reports in our mail handling microservice we will need 2 things:
 - Get access to the POST body of a request
 - Process and manipulate JSON data
 
-To get access to this add the following imports to your `web.py` file:
-
-```python
-import json
-from flask import request
-```
-
-Then we define a new method that will:
+To get access to this we edit `web.py` to define a new method that will:
 - Handle the incoming delta reports
 - Load the delta report into a variable
 - Define some variables.
 
-Lastly we define an array that will hold the URI’s of all emails that need to be sent.
+Lastly we define an array that will hold the URIs of all emails that need to be sent.
 
 
 ```python
 # mail-service/web.py
+import json
+from flask import request
+
+# ...
+
 @app.route("/process_delta", methods=['POST'])
 def processDelta():
-  delta_report = json.loads(request.data)
-  mails_to_send = set()
-  predicate_mail_is_ready = "http://example.com/ready"
-  value_mail_is_ready = "yes"
-  # continued later...
-```
+    delta_report = json.loads(request.data)
+    mails_to_send = set()
+    predicate_mail_is_ready = "http://example.com/ready"
+    value_mail_is_ready = "yes"
 
-We will loop over all inserted triples to check for mails that are ready to be sent:
-```python
-# mail-service/web.py
-def processDelta():
-  # ...
-  # ...continuation
-  for delta in delta_report['delta']:
-      for triple in delta['inserts']:
-          if(triple['p']['value'] == predicate_mail_is_ready):
-              if(triple['o']['value'] == value_mail_is_ready):
-                  mails_to_send.add(triple['s']['value'])
+    # Loop over all inserted triples to check for mails that are ready to be sent:
+
+    for delta in delta_report['delta']:
+        for triple in delta['inserts']:
+            if(triple['p']['value'] == predicate_mail_is_ready):
+                if(triple['o']['value'] == value_mail_is_ready):
+                    mails_to_send.add(triple['s']['value'])
   # continued later...
 ```
 
@@ -968,15 +960,18 @@ Add the following code to `mail_helpers.py`:
 # mail-service/mail_helpers.py
 def load_mail(uri):
     # this query will find the mail (if it exists)
-    select_query = "SELECT DISTINCT ?uuid ?from ?ready ?subject ?content\n"
-    select_query += "WHERE \n{\n"
-    select_query += "<" + str(uri) + "> <http://mail.com/from> ?from;\n"
-    select_query += "a <http://mail.com/Mail>;\n"
-    select_query += "<http://mail.com/content> ?content;\n"
-    select_query += "<http://mail.com/subject> ?subject;\n"
-    select_query += "<http://mail.com/ready> ?ready;\n"
-    select_query += "<http://mu.semte.ch/vocabularies/core/uuid> ?uuid.\n"
-    select_query += "}"
+    select_query = (
+        f'SELECT DISTINCT ?uuid ?from ?to ?ready ?subject ?content\n'
+        f'WHERE {{\n'
+        f'    <{str(uri)}> a <http://example.com/Mail>;\n'
+        f'    <http://example.com/from> ?from;\n'
+        f'    <http://example.com/to> ?to;\n'
+        f'    <http://example.com/content> ?content;\n'
+        f'    <http://example.com/subject> ?subject;\n'
+        f'    <http://example.com/ready> ?ready;\n'
+        f'    <http://mu.semte.ch/vocabularies/core/uuid> ?uuid.\n'
+        f'}}'
+    )
 
     # execute the query...
     result = helpers.query(select_query)
@@ -993,7 +988,8 @@ def load_mail(uri):
     # we extract an object
     mail = dict()
     mail['uuid'] = bindings['uuid']['value']
-    mail['sender'] = bindings['from']['value']
+    mail['from'] = bindings['from']['value']
+    mail['to'] = bindings['to']['value']
     mail['ready'] = bindings['ready']['value']
     mail['subject'] = bindings['subject']['value']
     mail['content'] = bindings['content']['value']
@@ -1009,12 +1005,9 @@ To send the mail I have copied the entire `send_mail` function from http://naels
 
 ```python
 # mail-service/mail_helpers.py
-def send_mail(mail):
-
-    fromaddr = "YOUR EMAIL"
-    toaddr = "EMAIL ADDRESS YOU SEND TO"
-
+def send_mail(mail, from_addr, password):
     msg = MIMEMultipart()
+    helpers.log(f"sending... {mail}")
 
     msg['From'] = mail['from']
     msg['To'] = mail['to']
@@ -1023,15 +1016,15 @@ def send_mail(mail):
     body = mail['content']
     msg.attach(MIMEText(body, 'plain'))
 
-    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server = SMTP(environ['SMTP_SERVER'], 587)
     server.starttls()
-    server.login(fromaddr, "YOUR PASSWORD")
+    server.login(from_addr, password)
     text = msg.as_string()
-    server.sendmail(fromaddr, toaddr, text)
+    server.sendmail(from_addr, mail['to'], text)
     server.quit()
 ```
 
-The last thing that we need to do is to connect the list of URI’s to the send_mail function:
+The last thing that we need to do is to connect the list of URIs to the send_mail function:
 ```python
 # mail-service/web.py
 def processDelta():
@@ -1040,6 +1033,10 @@ def processDelta():
         mail = mail_helpers.load_mail(uri)
         if 'uuid' in mail.keys():
             mail_helpers.send_mail(mail, EMAIL_ADDRESS, EMAIL_PWD)
+        else:
+            helpers.log(f"Either no mail found or not ready: {mail}")
+
+    return "ok"
 ```
 
 To test this you can send a POST request similar to this one to your local mu.semte.ch application on http://localhost/mails:
@@ -1058,7 +1055,7 @@ To test this you can send a POST request similar to this one to your local mu.se
 }
 ```
 
-If all went well then the person whose email address you filled in in the to field will have gotten a mail from you. Good job! You've just created a mailing microservice.
+If all went well then the person whose email address you filled in in the to field will have gotten a mail from you (or there's a 'sent' mail in the [Ethereal Mail](https://ethereal.email/messages/) mailbox). Good job! You've just created a mailing microservice.
 
 *This tutorial has been adapted from Jonathan Langens' mu.semte.ch articles. You can view them [here](https://mu.semte.ch/2017/02/16/reactive-microservice-hands-on-tutorial-part-1/) and [here](https://mu.semte.ch/2017/03/16/reactive-microservice-hands-on-tutorial-part-2/).*
 
