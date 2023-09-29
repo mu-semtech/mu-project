@@ -7,20 +7,12 @@ services:
       SESSION_COOKIE_SECURE: "on"
     links:
       - dispatcher:dispatcher
-    ports:
-      - "80:80"
   dispatcher:
     image: semtech/mu-dispatcher:2.1.0-beta.2
     links:
       - resource:resource
     volumes:
       - ./config/dispatcher:/config
-  resource:
-    image: semtech/mu-cl-resources:1.22.1
-    links:
-      - database:database
-    volumes:
-      - ./config/resources:/config
   database:
     image: semtech/mu-authorization:0.6.0-beta.8
     environment:
@@ -37,10 +29,16 @@ services:
     labels:
       - "logging=true"
   triplestore:
-    image: redpencil/virtuoso:1.1.0
+    image: redpencil/virtuoso:1.2.0-rc.1
     environment:
       SPARQL_UPDATE: "true"
       DEFAULT_GRAPH: "http://mu.semte.ch/application"
     volumes:
       - ./data/db:/data
       - ./config/virtuoso/virtuoso.ini:/data/virtuoso.ini
+  resource:
+    image: semtech/mu-cl-resources:1.22.2
+    links:
+      - database:database
+    volumes:
+      - ./config/resources:/config
