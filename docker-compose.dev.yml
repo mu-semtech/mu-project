@@ -1,0 +1,9 @@
+version: '3.4'
+
+services:
+  identifier:
+    ports:
+      - "80:80"
+  database:
+    ports:
+      - "8890:8890"
