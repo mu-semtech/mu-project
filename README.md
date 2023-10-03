@@ -30,7 +30,7 @@ Boot your microservices-enabled system using docker-compose.
 You can shut down using `docker-compose stop` and remove everything using `docker-compose rm`.
 
 ## Tutorials
-If you aren't familiar with the semantic.works stack/microservices yet, you might want to check out [why semantic tech?](https://mu.semte.ch/2017/03/23/adding-ember-fastboot-to-your-mu-project/)
+If you aren't familiar with the semantic.works stack/microservices yet, you might want to check out [why semantic tech?](https://mu.semte.ch/about/)
 
 - [Creating a JSON API](#creating-a-json-api)
 - [Adding authentication to your mu-project](#adding-authentication-to-your-mu-project)
