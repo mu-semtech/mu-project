@@ -222,7 +222,7 @@ Next, add the inverse relationship to the author’s model:
 (define-resource author ()
   :class (s-prefix "schema:Author")
   :properties `((:name :string ,(s-prefix "schema:name")))
-  :has-many `((book :via (s-prefix "schema:author")
+  :has-many `((book :via ,(s-prefix "schema:author")
                :inverse t
                :as "books"))
   :resource-base (s-url "http://mu.semte.ch/services/github/madnificent/book-service/authors/")
