@@ -7,12 +7,20 @@ services:
       SESSION_COOKIE_SECURE: "on"
     links:
       - dispatcher:dispatcher
+    ulimits:      
+      nofile: 
+        soft: "65536"
+        hard: "65536"
   dispatcher:
     image: semtech/mu-dispatcher:2.1.0-beta.2
     links:
       - resource:resource
     volumes:
       - ./config/dispatcher:/config
+    ulimits:      
+      nofile: 
+        soft: "65536"
+        hard: "65536"      
   database:
     image: redpencil/virtuoso:1.2.0-rc.1
     environment:
