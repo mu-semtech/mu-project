@@ -28,7 +28,7 @@ services:
   delta-notifier:
     image: semtech/mu-delta-notifier:0.4.0
     volumes:
-      - ./config/delta:/config/
+      - ./config/delta-notifier:/config/
     labels:
       - "logging=true"
   database:
