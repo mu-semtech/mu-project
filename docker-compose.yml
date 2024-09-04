@@ -15,7 +15,7 @@ services:
   # Your extra services here
 
   resource:
-    image: semtech/mu-cl-resources:1.23.0
+    image: semtech/mu-cl-resources:1.25.0
     volumes:
       - ./config/resources:/config
     labels:
@@ -32,7 +32,7 @@ services:
     labels:
       - "logging=true"
   database:
-    image: semtech/sparql-parser:0.0.7
+    image: semtech/sparql-parser:0.0.8
     volumes:
       - ./config/authorization/:/config/
       - ./data/authorization/:/data/
