@@ -28,21 +28,20 @@ services:
   delta-notifier:
     image: semtech/mu-delta-notifier:0.4.0
     volumes:
-      - ./config/delta-notifier:/config/
+      - ./config/delta:/config/
     labels:
       - "logging=true"
   database:
     image: semtech/sparql-parser:0.0.7
     volumes:
-      - ./config/mu-cl-authorization/:/config/
-      - ./data/mu-cl-authorization/:/data/
+      - ./config/authorization/:/config/
+      - ./data/authorization/:/data/
     labels:
       - "logging=true"
   triplestore:
     image: redpencil/virtuoso:1.2.0-rc.1
     environment:
       SPARQL_UPDATE: "true"
-      DEFAULT_GRAPH: "http://mu.semte.ch/application"
     volumes:
       - ./data/db:/data
       - ./config/virtuoso/virtuoso.ini:/data/virtuoso.ini
