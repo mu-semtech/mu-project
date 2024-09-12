@@ -20,7 +20,7 @@ services:
       - ./data/db:/data
       - ./config/virtuoso/virtuoso.ini:/data/virtuoso.ini
   resource:
-    image: semtech/mu-cl-resources:1.23.0
+    image: semtech/mu-cl-resources:1.25.0
     links:
       - database:database
     volumes:
