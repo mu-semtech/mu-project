@@ -7,12 +7,44 @@ services:
       SESSION_COOKIE_SECURE: "on"
     links:
       - dispatcher:dispatcher
+    labels:
+      - "logging=true"
   dispatcher:
     image: semtech/mu-dispatcher:2.1.0-beta.2
     links:
       - resource:resource
     volumes:
       - ./config/dispatcher:/config
+    labels:
+      - "logging=true"
+
+  # Your extra services here
+
+  resource:
+    image: semtech/mu-cl-resources:1.25.0
+    links:
+      - database:database
+    volumes:
+      - ./config/resources:/config
+    labels:
+      - "logging=true"
+
+  migrations:
+    image: semtech/mu-migrations-service:0.9.0
+    links:
+      - triplestore:database
+    environment:
+      MU_SPARQL_TIMEOUT: 600
+    volumes:
+      - ./config/migrations:/data/migrations
+    labels:
+      - "logging=true"
+  delta-notifier:
+    image: semtech/mu-delta-notifier:0.4.0
+    volumes:
+      - ./config/delta:/config
+    labels:
+      - "logging=true"
   database:
     image: semtech/mu-authorization:0.6.0-beta.8
     environment:
@@ -20,12 +52,6 @@ services:
       ERROR_ON_UNWRITTEN_DATA: "true"
     volumes:
       - ./config/authorization:/config
-    labels:
-      - "logging=true"
-  delta-notifier:
-    image: semtech/mu-delta-notifier:0.1.0
-    volumes:
-      - ./config/delta:/config
     labels:
       - "logging=true"
   triplestore:
@@ -36,9 +62,5 @@ services:
     volumes:
       - ./data/db:/data
       - ./config/virtuoso/virtuoso.ini:/data/virtuoso.ini
-  resource:
-    image: semtech/mu-cl-resources:1.23.0
-    links:
-      - database:database
-    volumes:
-      - ./config/resources:/config
+    labels:
+      - "logging=true"
