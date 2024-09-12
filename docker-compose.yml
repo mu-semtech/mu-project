@@ -29,6 +29,8 @@ services:
       MU_SPARQL_TIMEOUT: 600
     volumes:
       - ./config/migrations:/data/migrations
+    labels:
+      - "logging=true"
   delta-notifier:
     image: semtech/mu-delta-notifier:0.4.0
     volumes:
@@ -49,3 +51,5 @@ services:
     volumes:
       - ./data/db:/data
       - ./config/virtuoso/virtuoso.ini:/data/virtuoso.ini
+    labels:
+      - "logging=true"
