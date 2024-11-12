@@ -1,3 +1,10 @@
+x-logging:
+  &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   identifier:
     image: semtech/mu-identifier:1.10.3
@@ -11,15 +18,16 @@ services:
       - ./config/dispatcher:/config
     labels:
       - "logging=true"
+    logging: *default-logging
 
   # Your extra services here
-
   resource:
     image: semtech/mu-cl-resources:1.25.0
     volumes:
       - ./config/resources:/config
     labels:
       - "logging=true"
+    logging: *default-logging
 
   migrations:
     image: semtech/mu-migrations-service:0.9.0
@@ -29,12 +37,16 @@ services:
       MU_SPARQL_TIMEOUT: 600
     volumes:
       - ./config/migrations:/data/migrations
+    logging: *default-logging
+
   delta-notifier:
     image: semtech/mu-delta-notifier:0.4.0
     volumes:
       - ./config/delta:/config/
     labels:
       - "logging=true"
+    logging: *default-logging
+
   database:
     image: semtech/sparql-parser:0.0.10
     volumes:
@@ -42,6 +54,8 @@ services:
       - ./data/authorization/:/data/
     labels:
       - "logging=true"
+    logging: *default-logging
+
   triplestore:
     image: redpencil/virtuoso:1.2.0-rc.1
     environment:
@@ -49,3 +63,4 @@ services:
     volumes:
       - ./data/db:/data
       - ./config/virtuoso/virtuoso.ini:/data/virtuoso.ini
+    logging: *default-logging
