@@ -12,6 +12,8 @@ services:
       SESSION_COOKIE_SECURE: "on"
     labels:
       - "logging=true"
+    logging: *default-logging
+
   dispatcher:
     image: semtech/mu-dispatcher:2.1.0-beta.2
     volumes:
@@ -37,6 +39,8 @@ services:
       MU_SPARQL_TIMEOUT: 600
     volumes:
       - ./config/migrations:/data/migrations
+    labels:
+      - "logging=true"
     logging: *default-logging
 
   delta-notifier:
@@ -63,4 +67,6 @@ services:
     volumes:
       - ./data/db:/data
       - ./config/virtuoso/virtuoso.ini:/data/virtuoso.ini
+    labels:
+      - "logging=true"
     logging: *default-logging
