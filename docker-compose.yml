@@ -36,7 +36,7 @@ services:
     labels:
       - "logging=true"
   database:
-    image: semtech/sparql-parser:0.0.8
+    image: semtech/sparql-parser:0.0.10
     volumes:
       - ./config/authorization/:/config/
       - ./data/authorization/:/data/
