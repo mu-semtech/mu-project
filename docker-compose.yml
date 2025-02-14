@@ -52,7 +52,7 @@ services:
     logging: *default-logging
 
   database:
-    image: semtech/sparql-parser:0.0.11
+    image: semtech/sparql-parser:0.0.14
     volumes:
       - ./config/authorization/:/config/
       - ./data/authorization/:/data/
