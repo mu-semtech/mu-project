@@ -1,4 +1,9 @@
-version: '3.4'
+x-logging:
+  &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 services:
   identifier:
@@ -11,27 +16,66 @@ services:
       nofile: 
         soft: "65536"
         hard: "65536"
+    labels:
+      - "logging=true"
+    logging: *default-logging
+    
   dispatcher:
     image: semtech/mu-dispatcher:2.1.0-beta.2
-    links:
-      - resource:resource
     volumes:
       - ./config/dispatcher:/config
     ulimits:      
       nofile: 
         soft: "65536"
         hard: "65536"      
+    labels:
+      - "logging=true"
+    logging: *default-logging
+
+  resource:
+    image: semtech/mu-cl-resources:1.26.0
+    volumes:
+      - ./config/resources:/config
+    labels:
+      - "logging=true"
+    logging: *default-logging
+
+  migrations:
+    image: semtech/mu-migrations-service:0.9.0
+    links:
+      - triplestore:database
+    environment:
+      MU_SPARQL_TIMEOUT: 600
+    volumes:
+      - ./config/migrations:/data/migrations
+    labels:
+      - "logging=true"
+    logging: *default-logging
+
+  delta-notifier:
+    image: semtech/mu-delta-notifier:0.4.0
+    volumes:
+      - ./config/delta:/config/
+    labels:
+      - "logging=true"
+    logging: *default-logging
+
   database:
-    image: redpencil/virtuoso:1.2.0-rc.1
+    image: semtech/sparql-parser:0.0.14
+    volumes:
+      - ./config/authorization/:/config/
+      - ./data/authorization/:/data/
+    labels:
+      - "logging=true"
+    logging: *default-logging
+
+  triplestore:
+    image: redpencil/virtuoso:1.2.1
     environment:
       SPARQL_UPDATE: "true"
-      DEFAULT_GRAPH: "http://mu.semte.ch/application"
     volumes:
       - ./data/db:/data
       - ./config/virtuoso/virtuoso.ini:/data/virtuoso.ini
-  resource:
-    image: semtech/mu-cl-resources:1.23.0
-    links:
-      - database:database
-    volumes:
-      - ./config/resources:/config
+    labels:
+      - "logging=true"
+    logging: *default-logging

@@ -1,8 +1,8 @@
 # Virtuoso files /data/db
 /data/db/*
-!/data/db/virtuoso.ini
+/data/authorization/*
+/data/db/virtuoso.ini
 !/data/db/toLoad
 !/data/db/toLoad/*
 
 docker-compose.override.yml
-
