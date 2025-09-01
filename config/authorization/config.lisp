@@ -46,7 +46,7 @@
 ;;
 ;; These are the graph specifications known in the system.  No
 ;; guarantees are given as to what content is readable from a graph.  If
-;; two graphs are nearly identitacl and have the same name, perhaps the
+;; two graphs are nearly identical and have the same name, perhaps the
 ;; specifications can be folded too.  This could help when building
 ;; indexes.
 
@@ -78,7 +78,7 @@
 ;; (supply-allowed-group "company"
 ;;   :query "PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 ;;           SELECT DISTINCT ?uuid WHERE {
-;;             <SESSION_ID ext:belongsToCompany/mu:uuid ?uuid
+;;             <SESSION_ID> ext:belongsToCompany/mu:uuid ?uuid
 ;;           }"
 ;;   :parameters ("uuid"))
 
