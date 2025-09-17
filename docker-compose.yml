@@ -7,7 +7,7 @@ x-logging:
 
 services:
   identifier:
-    image: semtech/mu-identifier:1.10.3
+    image: semtech/mu-identifier:1.11.0
     environment:
       SESSION_COOKIE_SECURE: "on"
     labels:
@@ -24,7 +24,7 @@ services:
 
   # Your extra services here
   resource:
-    image: semtech/mu-cl-resources:1.25.0
+    image: semtech/mu-cl-resources:1.27.2
     volumes:
       - ./config/resources:/config
     labels:
@@ -52,7 +52,7 @@ services:
     logging: *default-logging
 
   database:
-    image: semtech/sparql-parser:0.0.11
+    image: semtech/sparql-parser:0.0.14
     volumes:
       - ./config/authorization/:/config/
       - ./data/authorization/:/data/
