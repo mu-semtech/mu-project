@@ -10,19 +10,28 @@ services:
     image: semtech/mu-identifier:1.10.3
     environment:
       SESSION_COOKIE_SECURE: "on"
+    links:
+      - dispatcher:dispatcher
+    ulimits:      
+      nofile: 
+        soft: "65536"
+        hard: "65536"
     labels:
       - "logging=true"
     logging: *default-logging
-
+    
   dispatcher:
     image: semtech/mu-dispatcher:2.1.0-beta.2
     volumes:
       - ./config/dispatcher:/config
+    ulimits:      
+      nofile: 
+        soft: "65536"
+        hard: "65536"      
     labels:
       - "logging=true"
     logging: *default-logging
 
-  # Your extra services here
   resource:
     image: semtech/mu-cl-resources:1.26.0
     volumes:
