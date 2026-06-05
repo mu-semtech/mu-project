@@ -61,7 +61,7 @@ services:
     logging: *default-logging
 
   triplestore:
-    image: redpencil/virtuoso:1.3.0
+    image: redpencil/virtuoso:1.4.0
     environment:
       SPARQL_UPDATE: "true"
     volumes:
