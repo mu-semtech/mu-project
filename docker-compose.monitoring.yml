@@ -1,0 +1,48 @@
+x-logging:
+  &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  json-exporter:
+    image: prometheuscommunity/json-exporter:v0.6.0
+    volumes:
+      - ./config/json-exporter/config.yml:/config.yml
+    command: ["--config.file=/config.yml"]
+    labels:
+      - "logging=true"
+    logging: *default-logging
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    labels:
+      - "logging=true"
+    logging: *default-logging
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    environment:
+      # CHANGE THIS: set a secure admin password before deploying
+      - GF_SECURITY_ADMIN_PASSWORD=changeme
+      # Anonymous access: allows viewing dashboards without logging in.
+      # Anyone who can reach the Grafana port gets read-only access to all
+      # dashboards. Disable this (set to false) if Grafana is exposed to
+      # untrusted networks or the internet.
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    volumes:
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana-data:/var/lib/grafana
+    labels:
+      - "logging=true"
+    logging: *default-logging
+
+volumes:
+  prometheus-data:
+  grafana-data:

@@ -1,0 +1,41 @@
+modules:
+  sparql_parser:
+    metrics:
+      # Worker pool
+      - name: sparqlparser_workers_total
+        path: "{ .amount-of-workers }"
+        help: "Total number of worker threads"
+      - name: sparqlparser_workers_idle
+        path: "{ .workers-without-work }"
+        help: "Workers with empty queues"
+      - name: sparqlparser_workers_running
+        path: "{ .worker-states.RUNNING }"
+        help: "Workers in RUNNING state"
+      - name: sparqlparser_workers_decommissioned
+        path: "{ .worker-states.DECOMMISSIONED }"
+        help: "Workers in DECOMMISSIONED state"
+
+      # Request queues
+      - name: sparqlparser_queue_size
+        path: "{ .total-queue }"
+        help: "Total jobs across all worker queues"
+      - name: sparqlparser_waiting_queue_size
+        path: "{ .total-waiting-queue }"
+        help: "Jobs queued but not yet executing"
+
+      # Update sequencer (SPARQL INSERT/DELETE pipeline)
+      - name: sparqlparser_update_sequencer_count
+        path: "{ .update-sequencer-count }"
+        help: "Total pending SPARQL update operations"
+      - name: sparqlparser_update_sequencer_initialized
+        path: "{ .update-sequencer-states.INITIALIZED }"
+        help: "Update operations in INITIALIZED state"
+      - name: sparqlparser_update_sequencer_waiting
+        path: "{ .update-sequencer-states.WAITING }"
+        help: "Update operations in WAITING state"
+      - name: sparqlparser_update_sequencer_running
+        path: "{ .update-sequencer-states.RUNNING }"
+        help: "Update operations in RUNNING state"
+      - name: sparqlparser_update_sequencer_finished
+        path: "{ .update-sequencer-states.FINISHED }"
+        help: "Update operations in FINISHED state"

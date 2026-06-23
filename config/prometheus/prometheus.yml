@@ -1,0 +1,30 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'delta-notifier'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['delta-notifier:80']
+
+  # Uncomment if your project includes mu-search
+  # - job_name: 'mu-search'
+  #   metrics_path: '/metrics'
+  #   static_configs:
+  #     - targets: ['search:80']
+
+  - job_name: 'sparql-parser'
+    metrics_path: /probe
+    params:
+      module: [sparql_parser]
+    static_configs:
+      - targets:
+          - http://database:8890/recovery-status
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: json-exporter:7979
